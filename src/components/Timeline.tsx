@@ -5,6 +5,10 @@ import type { Alliance, EventType, MatchEvent } from '../lib/types'
 const LANES = ['Nectar', 'Pollen', 'Tip'] as const
 const LANE_H = 22
 const PAD_X = 6
+/** Vertical step between marks stacked in one burst of shots. */
+const STACK_STEP = 8
+/** Shots closer than this many px to the start of a burst join its stack. */
+const STACK_GAP = 10
 
 const LABELS: Record<EventType, string> = {
   nectar_score: 'Nectar scored',
@@ -61,16 +65,40 @@ export function Timeline({
 
   const plotW = Math.max(0, width - PAD_X * 2)
   const x = (t: number) => PAD_X + (Math.min(t, MATCH_MS) / MATCH_MS) * plotW
-  const height = LANES.length * LANE_H
+
+  // Consecutive shots in the same lane that would overlap on the axis stack
+  // upward at the burst's first x instead of stepping sideways. Tips don't stack.
+  const placed: { x: number; level: number; top: boolean }[] = []
+  const lastInLane: (number | undefined)[] = []
+  const depth = LANES.map(() => 1)
+  events.forEach((e, i) => {
+    const lane = laneOf(e.type)
+    const prev = lastInLane[lane]
+    const px = x(e.t)
+    if (lane !== 2 && prev != null && px - placed[prev].x < STACK_GAP) {
+      placed[prev].top = false
+      placed[i] = { x: placed[prev].x, level: placed[prev].level + 1, top: true }
+      depth[lane] = Math.max(depth[lane], placed[i].level + 1)
+    } else {
+      placed[i] = { x: px, level: 0, top: true }
+    }
+    lastInLane[lane] = i
+  })
+  const laneH = depth.map((d) => LANE_H + (d - 1) * STACK_STEP)
+  // Each lane's guide line (and bottom of its stacks) sits LANE_H / 2 above the lane's bottom.
+  const baseY = laneH.map((_, i) => laneH.slice(0, i + 1).reduce((a, b) => a + b, 0) - LANE_H / 2)
+  const height = laneH.reduce((a, b) => a + b, 0)
   const activeEvent = active != null ? events[active] : null
 
   return (
     <div className="select-none">
       <div className="flex">
         <div className="w-14 shrink-0 text-[11px] text-ink-3">
-          {LANES.map((l) => (
-            <div key={l} style={{ height: LANE_H }} className="flex items-center">
-              {l}
+          {LANES.map((l, i) => (
+            <div key={l} style={{ height: laneH[i] }} className="flex items-end">
+              <div style={{ height: LANE_H }} className="flex items-center">
+                {l}
+              </div>
             </div>
           ))}
         </div>
@@ -81,12 +109,12 @@ export function Timeline({
               <rect x={x(0)} y={0} width={x(AUTO_MS) - x(0)} height={height} fill="var(--color-surface-2)" rx={4} />
               <rect x={x(AUTO_MS)} y={0} width={x(TELEOP_START_MS) - x(AUTO_MS)} height={height} fill="var(--color-line)" opacity={0.5} />
               {LANES.map((_, i) => (
-                <line key={i} x1={PAD_X} x2={PAD_X + plotW} y1={(i + 0.5) * LANE_H} y2={(i + 0.5) * LANE_H} stroke="var(--color-line)" strokeWidth={1} />
+                <line key={i} x1={PAD_X} x2={PAD_X + plotW} y1={baseY[i]} y2={baseY[i]} stroke="var(--color-line)" strokeWidth={1} />
               ))}
               <line x1={x(FLOWER_UNLOCK_MS)} x2={x(FLOWER_UNLOCK_MS)} y1={0} y2={height} stroke="var(--color-ink-3)" strokeDasharray="2 3" strokeWidth={1} />
               {events.map((e, i) => {
-                const cx = x(e.t)
-                const cy = (laneOf(e.type) + 0.5) * LANE_H
+                const { x: cx, level, top } = placed[i]
+                const cy = baseY[laneOf(e.type)] - level * STACK_STEP
                 const color = colorOf(e.type)
                 const isActive = active === i
                 let mark
@@ -103,10 +131,12 @@ export function Timeline({
                   <g key={i} opacity={active != null && !isActive ? 0.5 : 1}>
                     {mark}
                     {interactive && (
-                      <circle
-                        cx={cx}
-                        cy={cy}
-                        r={11}
+                      // Stacked marks split the stack's height so each one stays hoverable.
+                      <rect
+                        x={cx - 11}
+                        y={cy - (top ? 11 : STACK_STEP / 2)}
+                        width={22}
+                        height={(top ? 11 : STACK_STEP / 2) + (level === 0 ? 11 : STACK_STEP / 2)}
                         fill="transparent"
                         onPointerEnter={() => setActive(i)}
                         onPointerLeave={() => setActive(null)}
@@ -124,7 +154,7 @@ export function Timeline({
           {activeEvent && (
             <div
               className="pointer-events-none absolute -top-9 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg border border-line bg-surface-2 px-2 py-1 text-xs shadow-lg"
-              style={{ left: Math.min(Math.max(x(activeEvent.t), 60), width - 60) }}
+              style={{ left: Math.min(Math.max(placed[active!].x, 60), width - 60) }}
             >
               <span className="text-ink">{LABELS[activeEvent.type]}</span>
               <span className="tnum text-ink-2"> · {formatElapsed(activeEvent.t)} · {activeEvent.phase === 'auto' ? 'Auto' : 'Teleop'}</span>
