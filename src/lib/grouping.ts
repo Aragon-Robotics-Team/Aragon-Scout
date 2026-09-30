@@ -1,5 +1,7 @@
+import { compareMatches, matchTypeOf } from './matches'
 import { average, pointsFor, robotStats, type RobotStats } from './scoring'
-import type { Alliance, Report, Tournament } from './types'
+import { teamNameIndex } from './teams'
+import type { Alliance, MatchType, Report, Tournament } from './types'
 
 export interface AllianceTeam {
   number: number
@@ -11,6 +13,7 @@ export interface AllianceTeam {
 export interface MatchGroup {
   key: string
   tournamentId: string | null
+  matchType: MatchType
   matchNumber: number
   reports: Report[]
   red: AllianceTeam[]
@@ -21,8 +24,8 @@ export interface MatchGroup {
   conflicts: string[]
 }
 
-export function matchKey(tournamentId: string | null, matchNumber: number): string {
-  return `${tournamentId ?? 'none'}:${matchNumber}`
+export function matchKey(tournamentId: string | null, matchType: MatchType, matchNumber: number): string {
+  return `${tournamentId ?? 'none'}:${matchType}:${matchNumber}`
 }
 
 function distinct<T>(values: T[]): T[] {
@@ -33,7 +36,7 @@ export function groupMatches(reports: Report[]): MatchGroup[] {
   const byKey = new Map<string, Report[]>()
   for (const r of reports) {
     if (r.deleted || r.pre.matchNumber == null) continue
-    const key = matchKey(r.tournamentId, r.pre.matchNumber)
+    const key = matchKey(r.tournamentId, matchTypeOf(r.pre), r.pre.matchNumber)
     const list = byKey.get(key)
     if (list) list.push(r)
     else byKey.set(key, [r])
@@ -83,6 +86,7 @@ export function groupMatches(reports: Report[]): MatchGroup[] {
     groups.push({
       key,
       tournamentId: list[0].tournamentId,
+      matchType: matchTypeOf(list[0].pre),
       matchNumber: list[0].pre.matchNumber!,
       reports: list,
       red,
@@ -92,7 +96,9 @@ export function groupMatches(reports: Report[]): MatchGroup[] {
       conflicts,
     })
   }
-  return groups.sort((a, b) => a.matchNumber - b.matchNumber)
+  return groups.sort((a, b) =>
+    compareMatches({ type: a.matchType, number: a.matchNumber }, { type: b.matchType, number: b.matchNumber }),
+  )
 }
 
 export interface TeamSummary {
@@ -134,6 +140,7 @@ function rate(values: boolean[]): number | null {
 
 export function summarizeTeams(reports: Report[], tournaments: Tournament[]): TeamSummary[] {
   const tById = new Map(tournaments.map((t) => [t.id, t]))
+  const names = teamNameIndex(tournaments, reports)
   const byTeam = new Map<number, Report[]>()
   for (const r of reports) {
     if (r.deleted || r.pre.teamNumber == null) continue
@@ -143,12 +150,17 @@ export function summarizeTeams(reports: Report[], tournaments: Tournament[]): Te
   }
   const out: TeamSummary[] = []
   for (const [teamNumber, list] of byTeam) {
-    list.sort((a, b) => (a.pre.matchNumber ?? 0) - (b.pre.matchNumber ?? 0) || a.createdAt - b.createdAt)
+    list.sort(
+      (a, b) =>
+        compareMatches(
+          { type: matchTypeOf(a.pre), number: a.pre.matchNumber ?? 0 },
+          { type: matchTypeOf(b.pre), number: b.pre.matchNumber ?? 0 },
+        ) || a.createdAt - b.createdAt,
+    )
     const stats = list.map((r) => robotStats(r, pointsFor(tById.get(r.tournamentId ?? ''))))
-    const named = [...list].sort((a, b) => b.updatedAt - a.updatedAt).find((r) => r.pre.teamName.trim())
     out.push({
       teamNumber,
-      teamName: named?.pre.teamName.trim() ?? '',
+      teamName: names.get(teamNumber) ?? '',
       reports: list,
       stats,
       matchesPlayed: list.length,

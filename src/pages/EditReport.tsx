@@ -1,21 +1,32 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useData, useDb } from '../app/data'
 import { PostMatchForm, PreMatchForm, TogglesForm } from '../components/ReportForms'
 import { Button, Empty, Label, Page } from '../components/ui'
 import { saveReport } from '../lib/db'
-import type { Report } from '../lib/types'
+import { matchPath } from '../lib/matches'
+import { teamNameIndex } from '../lib/teams'
+import type { Report, Tournament } from '../lib/types'
 
 export function EditReportPage() {
   const { id } = useParams()
   const { reports, tournaments, loaded } = useData()
   const original = reports.find((r) => r.id === id)
+  const knownNames = useMemo(() => teamNameIndex(tournaments, reports), [tournaments, reports])
   if (!loaded) return <Page>{null}</Page>
   if (!original) return <Page title="Edit recording"><Empty title="Recording not found" /></Page>
-  return <Editor key={original.id} original={original} tournaments={tournaments} />
+  return <Editor key={original.id} original={original} tournaments={tournaments} knownNames={knownNames} />
 }
 
-function Editor({ original, tournaments }: { original: Report; tournaments: ReturnType<typeof useData>['tournaments'] }) {
+function Editor({
+  original,
+  tournaments,
+  knownNames,
+}: {
+  original: Report
+  tournaments: Tournament[]
+  knownNames: Map<number, string>
+}) {
   const db = useDb()
   const navigate = useNavigate()
   const [report, setReport] = useState(original)
@@ -23,7 +34,7 @@ function Editor({ original, tournaments }: { original: Report; tournaments: Retu
 
   const save = async () => {
     await saveReport(db, report)
-    navigate(`/matches/${report.tournamentId ?? 'none'}/${report.pre.matchNumber}?r=${report.id}`, { replace: true })
+    navigate(matchPath('', report.tournamentId, report.pre, report.id), { replace: true })
   }
 
   return (
@@ -47,7 +58,12 @@ function Editor({ original, tournaments }: { original: Report; tournaments: Retu
         </section>
         <section>
           <h2 className="mb-3 text-sm font-medium text-ink-2">Before the match</h2>
-          <PreMatchForm value={report.pre} onChange={(pre) => setReport({ ...report, pre })} />
+          <PreMatchForm
+            value={report.pre}
+            knownNames={knownNames}
+            tournament={tournaments.find((t) => t.id === report.tournamentId)}
+            onChange={(pre) => setReport({ ...report, pre })}
+          />
         </section>
         <section>
           <h2 className="mb-3 text-sm font-medium text-ink-2">Leave &amp; park</h2>

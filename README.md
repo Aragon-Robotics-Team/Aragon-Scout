@@ -6,6 +6,10 @@ Real-time match scouting for the FTC **BIOBUZZ** (2026–27) season. It's a dark
 - **Recording flow:** pre-match info, then **Auto 0:30**, an **8s transition** (taps still count as auto), and **Teleop 2:00**. After that come the post-match fields and Submit.
 - **Live tapping:** nectar/pollen score and miss, hive tips, Leave and Park toggles, and "into flower" buttons that appear at 1:00 left. Everything lands on a live timeline, with undo.
 - **My Matches:** one row per match, merged from every recording of that match. A ⚠ appears when recordings disagree.
+- **Tournament setup:**
+  - a **team list**: paste, add by hand, or fetch from FTCScout, which feeds a type-to-filter team name dropdown
+  - a **qualification schedule**: typed into a grid, pasted, read from an FTC Live / MatchMaker **PDF** on the device, or fetched from FTCScout. Every source goes through a review grid before it's saved.
+- **Schedule-aware recording:** for a scheduled qual, enter the match # and tap one of the 4 robots to fill in the team, alliance, partner and opponents. Qual and playoff matches are kept apart (Q12 / P3).
 - **Tournament analysis:** per-team averages, accuracy, park rates, estimated robot points, and a per-match chart.
 - **JSON export** (one match, one tournament, or everything) and import.
 - **Optional public sharing** as a read-only link `/t/<team#>`. Only your team's signed-in scouts can ever write.
@@ -19,7 +23,7 @@ Point values default to Competition Manual V1, Table 10-2 and Table 10-3. They c
 ```sh
 npm install
 npm run dev        # http://localhost:5173
-npm test           # unit tests for scoring, grouping, timing, sync merge, import/export
+npm test           # unit tests: scoring, grouping, timing, sync merge, import/export, schedule/PDF/FTCScout parsing
 npm run build      # production build + service worker in dist/
 ```
 

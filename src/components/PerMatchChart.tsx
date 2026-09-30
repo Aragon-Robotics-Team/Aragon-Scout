@@ -91,7 +91,7 @@ export function PerMatchChart({ bars }: { bars: MatchBar[] }) {
           className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg border border-line bg-surface-2 px-2.5 py-1.5 text-xs shadow-lg"
           style={{ left: Math.min(Math.max(padL + slot * active + slot / 2, 70), width - 70) }}
         >
-          <div className="font-medium">Match {a.label}</div>
+          <div className="font-medium">{a.label}</div>
           <div className="tnum text-ink-2">
             {a.value} pts · {a.tips} tips · {formatPct(a.accuracy)} acc.
           </div>

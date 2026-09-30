@@ -1,5 +1,6 @@
 export type Alliance = 'red' | 'blue'
 export type Phase = 'auto' | 'teleop'
+export type MatchType = 'qual' | 'playoff'
 
 export type EventType =
   | 'nectar_score'
@@ -18,6 +19,8 @@ export interface MatchEvent {
 }
 
 export interface PreMatch {
+  /** Missing on recordings made before playoffs were tracked — treat as 'qual'. */
+  matchType?: MatchType
   matchNumber: number | null
   teamName: string
   teamNumber: number | null
@@ -81,6 +84,18 @@ export interface RpThresholds {
   pollinator2Tips: number
 }
 
+export interface TournamentTeam {
+  number: number
+  name: string
+}
+
+/** One qualification match from the published schedule. */
+export interface ScheduledMatch {
+  match: number
+  red: [number, number]
+  blue: [number, number]
+}
+
 export interface Tournament {
   id: string
   name: string
@@ -88,6 +103,10 @@ export interface Tournament {
   startDate: string
   points: PointValues
   thresholds: RpThresholds
+  /** Optional on older tournaments. */
+  teams?: TournamentTeam[]
+  /** Qualification schedule; optional on older tournaments. */
+  schedule?: ScheduledMatch[]
   createdAt: number
   updatedAt: number
   deleted: boolean

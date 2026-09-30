@@ -13,6 +13,7 @@ export function newReport(tournamentId: string | null, scoutingTeam: number | nu
     tournamentId,
     scoutingTeam,
     pre: {
+      matchType: 'qual',
       matchNumber: null,
       teamName: '',
       teamNumber: null,
@@ -48,6 +49,8 @@ export function newTournament(name: string, eventCode = '', startDate = ''): Tou
     startDate,
     points: { ...DEFAULT_POINTS },
     thresholds: { ...DEFAULT_THRESHOLDS },
+    teams: [],
+    schedule: [],
     createdAt: now,
     updatedAt: now,
     deleted: false,

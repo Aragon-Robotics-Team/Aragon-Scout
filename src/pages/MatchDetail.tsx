@@ -7,6 +7,7 @@ import { Button, Card, Empty, Page, TeamChip, cx } from '../components/ui'
 import { deleteReport } from '../lib/db'
 import { buildExport, downloadJson } from '../lib/exportData'
 import { groupMatches } from '../lib/grouping'
+import { matchLabel, matchTitle, matchTypeOf, parseMatchParam } from '../lib/matches'
 import { alliancePostPoints, formatPct, pointsFor, robotStats, winnerOf } from '../lib/scoring'
 import type { Report, Tournament } from '../lib/types'
 
@@ -15,18 +16,23 @@ export function MatchDetailPage() {
   const [params, setParams] = useSearchParams()
   const { reports, tournaments, base, loaded } = useData()
   const tournamentId = tid === 'none' ? null : (tid ?? null)
-  const matchNumber = Number(match)
+  const parsed = parseMatchParam(match)
+  const matchType = parsed?.type ?? 'qual'
+  const matchNumber = parsed?.number ?? NaN
   const tournament = tournaments.find((t) => t.id === tournamentId)
 
   const group = useMemo(
-    () => groupMatches(reports.filter((r) => r.tournamentId === tournamentId && r.pre.matchNumber === matchNumber))[0],
-    [reports, tournamentId, matchNumber],
+    () =>
+      groupMatches(
+        reports.filter((r) => r.tournamentId === tournamentId && matchTypeOf(r.pre) === matchType && r.pre.matchNumber === matchNumber),
+      )[0],
+    [reports, tournamentId, matchType, matchNumber],
   )
 
   if (!loaded) return <Page>{null}</Page>
   if (!group) {
     return (
-      <Page title={`Match ${match}`}>
+      <Page title={parsed ? matchTitle(parsed.type, parsed.number) : 'Match'}>
         <Empty title="No recordings for this match">
           <Link to={`${base}/matches`} className="underline underline-offset-4">
             Back to matches
@@ -47,7 +53,7 @@ export function MatchDetailPage() {
       </Link>
       <div className="mt-2 mb-5 flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Match {group.matchNumber}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{matchTitle(group.matchType, group.matchNumber)}</h1>
           <p className="text-sm text-ink-2">{tournament?.name ?? 'No tournament'}</p>
         </div>
         <div className="tnum text-right text-2xl font-semibold tracking-tight">
@@ -139,11 +145,11 @@ export function ReportView({ report, tournament }: { report: Report; tournament:
 
   const exportOne = () =>
     downloadJson(
-      `match-${report.pre.matchNumber}-team-${report.pre.teamNumber}.json`,
+      `match-${matchLabel(matchTypeOf(report.pre), report.pre.matchNumber)}-team-${report.pre.teamNumber}.json`,
       buildExport([report], tournament ? [tournament] : [], account?.teamNumber ?? null),
     )
   const remove = async () => {
-    if (!db || !confirm(`Delete the recording of team ${report.pre.teamNumber} in match ${report.pre.matchNumber}?`)) return
+    if (!db || !confirm(`Delete the recording of team ${report.pre.teamNumber} in ${matchTitle(matchTypeOf(report.pre), report.pre.matchNumber)}?`)) return
     await deleteReport(db, report)
     navigate('/matches', { replace: true })
   }

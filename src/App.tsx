@@ -13,6 +13,7 @@ import { PublicTeamPage } from './pages/PublicTeam'
 import { RecordPage } from './pages/Record'
 import { SignInPage } from './pages/SignIn'
 import { TeamDetailPage } from './pages/TeamDetail'
+import { TournamentDetailPage } from './pages/TournamentDetail'
 import { TournamentsPage } from './pages/Tournaments'
 
 function PrivateApp() {
@@ -31,6 +32,7 @@ function PrivateApp() {
           <Route path="/analysis" element={<AnalysisPage />} />
           <Route path="/analysis/:team" element={<TeamDetailPage />} />
           <Route path="/tournaments" element={<TournamentsPage />} />
+          <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
           <Route path="/data" element={<DataPage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

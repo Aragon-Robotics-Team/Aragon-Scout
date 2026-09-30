@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { matchLabel, matchTypeOf } from '../lib/matches'
 import { FLOWER_UNLOCK_MS, formatClock, phaseAt, remainingInStage, stageAt } from '../lib/timing'
 import type { EventType, Report } from '../lib/types'
 import { Timeline } from './Timeline'
@@ -82,7 +83,7 @@ export function LiveScoring({
         </div>
         <div className="min-w-0 text-right text-sm text-ink-2">
           {tournamentName && <div className="max-w-[12rem] truncate text-xs text-ink-3">{tournamentName}</div>}
-          <div className="tnum">Match {report.pre.matchNumber}</div>
+          <div className="tnum">{matchLabel(matchTypeOf(report.pre), report.pre.matchNumber)}</div>
           <div className="tnum font-medium" style={{ color: nectar }}>
             {report.pre.teamNumber}
           </div>

@@ -4,12 +4,13 @@ import { useData } from '../app/data'
 import { ALL, TournamentSelect } from '../components/TournamentSelect'
 import { Empty, Page, SearchInput, TeamChip, cx } from '../components/ui'
 import { groupMatches, type MatchGroup } from '../lib/grouping'
+import { matchLabel } from '../lib/matches'
 import type { Alliance } from '../lib/types'
 
 function matchesQuery(g: MatchGroup, q: string): boolean {
   if (!q) return true
   const needle = q.toLowerCase()
-  if (String(g.matchNumber) === needle) return true
+  if (String(g.matchNumber) === needle || matchLabel(g.matchType, g.matchNumber).toLowerCase() === needle) return true
   if ([...g.red, ...g.blue].some((t) => String(t.number).includes(needle))) return true
   return g.reports.some((r) => r.pre.teamName.toLowerCase().includes(needle))
 }
@@ -70,7 +71,7 @@ export function MatchesPage() {
               <ul className="space-y-2">
                 {s.groups.map((g) => (
                   <li key={g.key}>
-                    <MatchRow group={g} href={`${base}/matches/${g.tournamentId ?? 'none'}/${g.matchNumber}`} />
+                    <MatchRow group={g} href={`${base}/matches/${g.tournamentId ?? 'none'}/${matchLabel(g.matchType, g.matchNumber)}`} />
                   </li>
                 ))}
               </ul>
@@ -98,7 +99,7 @@ function MatchRow({ group: g, href }: { group: MatchGroup; href: string }) {
       className="grid grid-cols-[3.25rem_5rem_1fr_1fr] items-stretch overflow-hidden rounded-2xl border border-line bg-surface transition-colors hover:border-ink-3"
     >
       <div className="flex flex-col items-center justify-center border-r border-line py-2">
-        <span className="text-[10px] uppercase tracking-wider text-ink-3">Match</span>
+        <span className="text-[10px] uppercase tracking-wider text-ink-3">{g.matchType === 'playoff' ? 'Playoff' : 'Qual'}</span>
         <span className="tnum text-lg font-semibold leading-tight">{g.matchNumber}</span>
       </div>
       <div className="tnum flex flex-col items-center justify-center border-r border-line text-sm">

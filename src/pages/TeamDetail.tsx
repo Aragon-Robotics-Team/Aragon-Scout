@@ -4,6 +4,7 @@ import { useData } from '../app/data'
 import { PerMatchChart } from '../components/PerMatchChart'
 import { Card, Empty, Page, Segmented, Stat } from '../components/ui'
 import { summarizeTeams } from '../lib/grouping'
+import { matchLabel, matchPath, matchTypeOf } from '../lib/matches'
 import { average, formatNum, formatPct, thresholdsFor } from '../lib/scoring'
 
 export function TeamDetailPage() {
@@ -58,7 +59,7 @@ export function TeamDetailPage() {
   const avg = (f: (s: (typeof st)[number]) => number) => formatNum(average(st.map(f)))
   const thresholds = thresholdsFor(tournament)
   const notes = summary.reports.flatMap((r) =>
-    [r.pre.notes, r.post.strategyNotes].filter((n) => n.trim()).map((n, i) => ({ key: `${r.id}-${i}`, match: r.pre.matchNumber, text: n })),
+    [r.pre.notes, r.post.strategyNotes].filter((n) => n.trim()).map((n, i) => ({ key: `${r.id}-${i}`, match: matchLabel(matchTypeOf(r.pre), r.pre.matchNumber), text: n })),
   )
 
   return (
@@ -80,7 +81,7 @@ export function TeamDetailPage() {
         <PerMatchChart
           bars={summary.reports.map((r, i) => ({
             key: r.id,
-            label: String(r.pre.matchNumber ?? '?'),
+            label: matchLabel(matchTypeOf(r.pre), r.pre.matchNumber),
             value: st[i].estPoints,
             tips: st[i].total.tips,
             accuracy: st[i].overallAccuracy,
@@ -125,12 +126,12 @@ export function TeamDetailPage() {
           {summary.reports.map((r, i) => (
             <li key={r.id}>
               <Link
-                to={`${base}/matches/${r.tournamentId ?? 'none'}/${r.pre.matchNumber}?r=${r.id}`}
+                to={matchPath(base, r.tournamentId, r.pre, r.id)}
                 className="flex items-center justify-between py-2.5 hover:text-ink"
               >
                 <span className="flex items-center gap-2">
                   <span className={`h-2 w-2 rounded-full ${r.pre.alliance === 'blue' ? 'bg-blue' : 'bg-red'}`} />
-                  <span className="tnum">Match {r.pre.matchNumber}</span>
+                  <span className="tnum">{matchLabel(matchTypeOf(r.pre), r.pre.matchNumber)}</span>
                 </span>
                 <span className="tnum text-ink-2">
                   {st[i].total.tips} tips · {formatPct(st[i].overallAccuracy)} · <span className="text-ink">{st[i].estPoints} pts</span>
@@ -147,7 +148,7 @@ export function TeamDetailPage() {
           <ul className="space-y-3 text-sm">
             {notes.map((n) => (
               <li key={n.key}>
-                <span className="tnum text-xs text-ink-3">Match {n.match}</span>
+                <span className="tnum text-xs text-ink-3">{n.match}</span>
                 <p className="whitespace-pre-wrap text-ink-2">{n.text}</p>
               </li>
             ))}

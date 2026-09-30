@@ -29,7 +29,9 @@ export default defineConfig({
       workbox: {
         // App shell is precached so the app opens with no connection.
         navigateFallback: '/index.html',
-        globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
+        // .mjs covers the PDF.js worker, so schedule PDFs can be read offline.
+        globPatterns: ['**/*.{js,mjs,css,html,svg,png,webmanifest}'],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
       },
     }),
   ],

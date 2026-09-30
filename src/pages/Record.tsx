@@ -5,7 +5,9 @@ import { useData, useDb } from '../app/data'
 import { LiveScoring } from '../components/LiveScoring'
 import { PostMatchForm, PreMatchForm } from '../components/ReportForms'
 import { Button, Page } from '../components/ui'
-import { saveReport } from '../lib/db'
+import { saveReport, saveTournament } from '../lib/db'
+import { matchLabel, matchPath, matchTypeOf } from '../lib/matches'
+import { mergeTeams, teamNameIndex, teamsOf } from '../lib/teams'
 import { newReport } from '../lib/factories'
 import { readJson, removeKey, writeJson } from '../lib/storage'
 import type { Report } from '../lib/types'
@@ -42,13 +44,7 @@ export function RecordPage() {
     return next
   }), [draftKey])
 
-  const knownNames = useMemo(() => {
-    const m = new Map<number, string>()
-    for (const r of [...reports].sort((a, b) => a.updatedAt - b.updatedAt)) {
-      if (r.pre.teamNumber != null && r.pre.teamName.trim()) m.set(r.pre.teamNumber, r.pre.teamName.trim())
-    }
-    return m
-  }, [reports])
+  const knownNames = useMemo(() => teamNameIndex(tournaments, reports), [tournaments, reports])
 
   const { report, stage } = draft
   // Before starting, follow the device's current tournament; after, it's fixed on the report.
@@ -72,13 +68,23 @@ export function RecordPage() {
   if (stage === 'post') {
     const submit = async () => {
       await saveReport(db, report)
+      // A team typed in by hand joins the tournament's list so every device can pick it next time.
+      const n = report.pre.teamNumber
+      if (tournament && n != null) {
+        const list = teamsOf(tournament)
+        const known = list.find((t) => t.number === n)
+        const name = report.pre.teamName.trim()
+        if (!known || (!known.name && name)) {
+          await saveTournament(db, { ...tournament, teams: mergeTeams(list, [{ number: n, name }]) })
+        }
+      }
       removeKey(draftKey)
-      navigate(`/matches/${report.tournamentId ?? 'none'}/${report.pre.matchNumber}?r=${report.id}`, { replace: true })
+      navigate(matchPath('', report.tournamentId, report.pre, report.id), { replace: true })
     }
     return (
       <Page title="After the match">
         <p className="-mt-3 mb-5 text-sm text-ink-3">
-          {tournament?.name ?? 'No tournament'} · Match {report.pre.matchNumber} · Team {report.pre.teamNumber}
+          {tournament?.name ?? 'No tournament'} · {matchLabel(matchTypeOf(report.pre), report.pre.matchNumber)} · Team {report.pre.teamNumber}
         </p>
         <PostMatchForm value={report.post} alliance={report.pre.alliance} onChange={(post) => setReport({ ...report, post })} />
         <div className="mt-8 flex items-center justify-between">
@@ -122,7 +128,7 @@ export function RecordPage() {
           </>
         )}
       </div>
-      <PreMatchForm value={pre} knownNames={knownNames} onChange={(p) => setReport({ ...report, pre: p })} />
+      <PreMatchForm value={pre} knownNames={knownNames} tournament={tournament} onChange={(p) => setReport({ ...report, pre: p })} />
       <div className="mt-8">
         <Button
           variant="primary"
