@@ -54,29 +54,36 @@ export function TournamentsPage() {
             const isCurrent = t.id === currentTournamentId
             return (
               <li key={t.id}>
-                <Card className={cx('p-4', isCurrent && 'border-ink-3')}>
+                {/* The whole card opens the tournament's edit page; "Use" sits above the link. */}
+                <Card className={cx('relative p-4 transition-colors hover:border-ink-3', isCurrent && 'border-ink-3')}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="truncate font-medium">{t.name}</div>
+                      <Link to={`/tournaments/${t.id}`} className="block truncate font-medium after:absolute after:inset-0 after:rounded-2xl">
+                        {t.name}
+                      </Link>
                       <div className="text-xs text-ink-3">
                         {[t.eventCode, t.startDate, `${count} recording${count === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}
                       </div>
+                      <div className="mt-2 text-xs text-ink-3">
+                        {[
+                          t.schedule?.length ? `${t.schedule.length} scheduled matches` : 'No schedule',
+                          t.teams?.length ? `${t.teams.length} teams` : 'no team list',
+                        ].join(' · ')}
+                      </div>
                     </div>
-                    {isCurrent ? (
-                      <span className="shrink-0 rounded-full bg-surface-2 px-3 py-1 text-xs text-ink">Current</span>
-                    ) : (
-                      <Button className="h-8 shrink-0 px-3 text-xs" onClick={() => setCurrentTournamentId(t.id)}>
-                        Use
-                      </Button>
-                    )}
+                    <div className="flex shrink-0 items-center gap-2">
+                      {isCurrent ? (
+                        <span className="rounded-full bg-surface-2 px-3 py-1 text-xs text-ink">Current</span>
+                      ) : (
+                        <Button className="relative z-10 h-8 px-3 text-xs" onClick={() => setCurrentTournamentId(t.id)}>
+                          Use
+                        </Button>
+                      )}
+                      <span aria-hidden className="text-ink-3">
+                        ›
+                      </span>
+                    </div>
                   </div>
-                  <Link to={`/tournaments/${t.id}`} className="mt-2 inline-block text-xs text-ink-3 hover:text-ink">
-                    {[
-                      t.schedule?.length ? `${t.schedule.length} scheduled matches` : 'No schedule',
-                      t.teams?.length ? `${t.teams.length} teams` : 'no team list',
-                    ].join(' · ')}{' '}
-                    · Set up →
-                  </Link>
                 </Card>
               </li>
             )
