@@ -3,22 +3,20 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../app/auth'
 import { useData, useDb } from '../app/data'
 import { LiveScoring } from '../components/LiveScoring'
-import { PostMatchForm, PreMatchForm } from '../components/ReportForms'
+import { IncompleteToggle, PostMatchForm, PreMatchForm } from '../components/ReportForms'
 import { Button, Page } from '../components/ui'
 import { saveReport, saveTournament } from '../lib/db'
 import { matchLabel, matchPath, matchTypeOf } from '../lib/matches'
 import { mergeTeams, teamNameIndex, teamsOf } from '../lib/teams'
 import { newReport } from '../lib/factories'
 import { readJson, removeKey, writeJson } from '../lib/storage'
+import { MATCH_MS, type Clock } from '../lib/timing'
 import type { Report } from '../lib/types'
 
 type Stage = 'pre' | 'live' | 'post'
 
-interface Draft {
-  report: Report
-  stage: Stage
-  startedAt: number | null
-}
+/** `pausedAt` and `pausedMs` are missing on drafts saved before the clock could stop. */
+type Draft = { report: Report; stage: Stage } & Clock
 
 export function RecordPage() {
   const { account } = useAuth()
@@ -28,9 +26,11 @@ export function RecordPage() {
   const draftKey = `as.draft:${account!.userId}`
 
   // The in-progress recording is kept in localStorage so a reload mid-match loses nothing.
-  const [draft, setDraftState] = useState<Draft>(
-    () => readJson<Draft>(draftKey) ?? { report: newReport(currentTournamentId, account!.teamNumber), stage: 'pre', startedAt: null },
-  )
+  const [draft, setDraftState] = useState<Draft>(() => {
+    const saved = readJson<Draft>(draftKey)
+    if (saved) return { ...saved, pausedAt: saved.pausedAt ?? null, pausedMs: saved.pausedMs ?? 0 }
+    return { report: newReport(currentTournamentId, account!.teamNumber), stage: 'pre', startedAt: null, pausedAt: null, pausedMs: 0 }
+  })
   const setDraft = useCallback(
     (d: Draft) => {
       setDraftState(d)
@@ -38,25 +38,38 @@ export function RecordPage() {
     },
     [draftKey],
   )
-  const setReport = useCallback((report: Report) => setDraftState((d) => {
-    const next = { ...d, report }
+  const update = useCallback((patch: (d: Draft) => Partial<Draft>) => setDraftState((d) => {
+    const next = { ...d, ...patch(d) }
     writeJson(draftKey, next)
     return next
   }), [draftKey])
+  const setReport = useCallback((report: Report) => update(() => ({ report })), [update])
+  const setClock = useCallback((c: Clock) => update(() => c), [update])
 
   const knownNames = useMemo(() => teamNameIndex(tournaments, reports), [tournaments, reports])
 
   const { report, stage } = draft
   // Before starting, follow the device's current tournament; after, it's fixed on the report.
   const tournament = tournaments.find((t) => t.id === (stage === 'pre' ? currentTournamentId : report.tournamentId))
-  const onLiveDone = useCallback(() => setDraftState((d) => {
-    const next = { ...d, stage: 'post' as const }
-    writeJson(draftKey, next)
-    return next
-  }), [draftKey])
+  // Ending before the buzzer or ever stopping the clock marks the recording incomplete; the scout can undo that at submit.
+  const onLiveDone = useCallback(
+    (elapsed: number) => update((d) => ({ stage: 'post', report: { ...d.report, incomplete: elapsed < MATCH_MS || !!d.report.paused } })),
+    [update],
+  )
+  const onLiveBack = useCallback(() => update(() => ({ stage: 'pre' })), [update])
 
-  if (stage === 'live' && draft.startedAt != null) {
-    return <LiveScoring report={report} startedAt={draft.startedAt} tournamentName={tournament?.name} onChange={setReport} onDone={onLiveDone} />
+  if (stage === 'live') {
+    return (
+      <LiveScoring
+        report={report}
+        clock={draft}
+        tournamentName={tournament?.name}
+        onChange={setReport}
+        onClock={setClock}
+        onBack={onLiveBack}
+        onDone={onLiveDone}
+      />
+    )
   }
 
   const discard = () => {
@@ -87,6 +100,7 @@ export function RecordPage() {
           {tournament?.name ?? 'No tournament'} · {matchLabel(matchTypeOf(report.pre), report.pre.matchNumber)} · Team {report.pre.teamNumber}
         </p>
         <PostMatchForm value={report.post} alliance={report.pre.alliance} onChange={(post) => setReport({ ...report, post })} />
+        <IncompleteToggle report={report} onChange={setReport} />
         <div className="mt-8 flex items-center justify-between">
           <Button variant="ghost" onClick={discard}>
             Discard
@@ -134,12 +148,12 @@ export function RecordPage() {
           variant="primary"
           className="h-14 w-full text-base"
           disabled={missing.length > 0}
-          onClick={() => setDraft({ report: { ...report, tournamentId: tournament!.id }, stage: 'live', startedAt: Date.now() })}
+          onClick={() => setDraft({ report: { ...report, tournamentId: tournament!.id }, stage: 'live', startedAt: null, pausedAt: null, pausedMs: 0 })}
         >
-          Start recording
+          Confirm
         </Button>
         <p className="mt-2 h-4 text-center text-xs text-ink-3">
-          {missing.length > 0 ? `Needs ${missing.join(', ')}` : 'Start when the match starts — the 2:38 timer runs automatically'}
+          {missing.length > 0 ? `Needs ${missing.join(', ')}` : 'Next, press Start when the match starts'}
         </p>
       </div>
     </Page>

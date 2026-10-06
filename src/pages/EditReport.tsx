@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useData, useDb } from '../app/data'
-import { PostMatchForm, PreMatchForm, TogglesForm } from '../components/ReportForms'
+import { IncompleteToggle, PostMatchForm, PreMatchForm, TogglesForm } from '../components/ReportForms'
 import { Button, Empty, Label, Page } from '../components/ui'
 import { saveReport } from '../lib/db'
 import { matchPath } from '../lib/matches'
@@ -72,6 +72,7 @@ function Editor({
         <section>
           <h2 className="mb-3 text-sm font-medium text-ink-2">After the match</h2>
           <PostMatchForm value={report.post} alliance={report.pre.alliance} onChange={(post) => setReport({ ...report, post })} />
+          <IncompleteToggle report={report} onChange={setReport} />
         </section>
       </div>
       <div className="mt-8 flex justify-end gap-2">

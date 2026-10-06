@@ -4,7 +4,7 @@ import { newReport, newTournament } from './factories'
 import { groupMatches, summarizeTeams } from './grouping'
 import { shouldAcceptRemote } from './merge'
 import { alliancePostPoints, robotStats, winnerOf } from './scoring'
-import { FLOWER_UNLOCK_MS, MATCH_MS, phaseAt, remainingInStage, stageAt } from './timing'
+import { FLOWER_UNLOCK_MS, MATCH_MS, clockElapsed, matchRemaining, phaseAt, remainingInStage, stageAt } from './timing'
 import type { Alliance, EventType, Report } from './types'
 
 function report(opts: {
@@ -47,6 +47,22 @@ describe('timing', () => {
   it('counts transition taps as auto', () => {
     expect(phaseAt(35_000)).toBe('auto')
     expect(phaseAt(38_000)).toBe('teleop')
+  })
+
+  it('shows 2:30 of match time, holding at 2:00 through the transition', () => {
+    expect(matchRemaining(0)).toBe(150_000)
+    expect(matchRemaining(10_000)).toBe(140_000)
+    expect(matchRemaining(30_000)).toBe(120_000)
+    expect(matchRemaining(37_999)).toBe(120_000)
+    expect(matchRemaining(48_000)).toBe(110_000)
+    expect(matchRemaining(MATCH_MS + 5_000)).toBe(0)
+  })
+
+  it('freezes the clock while stopped', () => {
+    expect(clockElapsed({ startedAt: null, pausedAt: null, pausedMs: 0 }, 5_000)).toBe(0)
+    expect(clockElapsed({ startedAt: 1_000, pausedAt: null, pausedMs: 0 }, 11_000)).toBe(10_000)
+    expect(clockElapsed({ startedAt: 1_000, pausedAt: 6_000, pausedMs: 0 }, 60_000)).toBe(5_000)
+    expect(clockElapsed({ startedAt: 1_000, pausedAt: null, pausedMs: 3_000 }, 11_000)).toBe(7_000)
   })
 
   it('unlocks flowers with one minute left', () => {
@@ -151,6 +167,19 @@ describe('grouping', () => {
     expect(s.avgEstPoints).toBe((3 + 20 + 0) / 2)
     expect(s.nectarAccuracy).toBe(0.5)
     expect(s.leaveRate).toBe(0.5)
+  })
+
+  it('counts incomplete recordings toward accuracy but not averages', () => {
+    const t = newTournament('Test')
+    const full = report({ match: 1, team: 7, alliance: 'red', tournamentId: t.id, events: [[40_000, 'nectar_score']] })
+    const part = report({ match: 2, team: 7, alliance: 'red', tournamentId: t.id, events: [[41_000, 'nectar_miss'], [42_000, 'tip']] })
+    full.toggles.leave = true
+    part.incomplete = true
+    const [s] = summarizeTeams([full, part], [t])
+    expect(s.matchesPlayed).toBe(2)
+    expect(s.nectarAccuracy).toBe(0.5)
+    expect(s.avgEstPoints).toBe(3)
+    expect(s.leaveRate).toBe(1)
   })
 
   it('uses per-tournament point values', () => {

@@ -37,6 +37,28 @@ export function remainingInStage(elapsed: number): number {
   }
 }
 
+/** Game-clock time left out of 2:30; holds at 2:00 through the transition, like the field display. */
+export function matchRemaining(elapsed: number): number {
+  if (elapsed < AUTO_MS) return AUTO_MS + TELEOP_MS - elapsed
+  if (elapsed < TELEOP_START_MS) return TELEOP_MS
+  return Math.max(0, MATCH_MS - elapsed)
+}
+
+/** A recording's clock, which the scout can stop and restart mid-match. */
+export interface Clock {
+  /** null until the scout presses Start. */
+  startedAt: number | null
+  /** Set while stopped. */
+  pausedAt: number | null
+  /** Total time spent stopped before the current stop. */
+  pausedMs: number
+}
+
+export function clockElapsed(c: Clock, now: number): number {
+  if (c.startedAt == null) return 0
+  return (c.pausedAt ?? now) - c.startedAt - c.pausedMs
+}
+
 export function formatClock(ms: number): string {
   const s = Math.max(0, Math.ceil(ms / 1000))
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`

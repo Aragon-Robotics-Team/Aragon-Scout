@@ -2,7 +2,7 @@ import { matchTypeOf } from '../lib/matches'
 import { findScheduledMatch, scheduleOf, slotFill } from '../lib/schedule'
 import { winnerOf } from '../lib/scoring'
 import { teamsOf } from '../lib/teams'
-import type { Alliance, MatchType, PostMatch, PreMatch, ScheduledMatch, Toggles, Tournament } from '../lib/types'
+import type { Alliance, MatchType, PostMatch, PreMatch, Report, ScheduledMatch, Toggles, Tournament } from '../lib/types'
 import { TeamCombobox } from './TeamCombobox'
 import { AlliancePicker, Label, NumberInput, Segmented, Stepper, TextArea, TextInput, cx } from './ui'
 
@@ -249,6 +249,23 @@ function RobotPicker({
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+export function IncompleteToggle({ report, onChange }: { report: Report; onChange(r: Report): void }) {
+  return (
+    <div className="mt-5">
+      <ToggleButton
+        label="Incomplete recording"
+        on={!!report.incomplete}
+        onChange={(v) => onChange({ ...report, incomplete: v })}
+        className="w-full"
+      />
+      <p className="mt-1.5 text-xs text-ink-3">
+        Incomplete recordings still count toward accuracy, but not toward totals and averages.
+        {report.paused && ' The clock was stopped during this match.'}
+      </p>
     </div>
   )
 }

@@ -158,21 +158,23 @@ export function summarizeTeams(reports: Report[], tournaments: Tournament[]): Te
         ) || a.createdAt - b.createdAt,
     )
     const stats = list.map((r) => robotStats(r, pointsFor(tById.get(r.tournamentId ?? ''))))
+    // Incomplete recordings feed accuracy (pooled over every shot) but not per-match totals and rates.
+    const full = stats.filter((_, i) => !list[i].incomplete)
     out.push({
       teamNumber,
       teamName: names.get(teamNumber) ?? '',
       reports: list,
       stats,
       matchesPlayed: list.length,
-      avgEstPoints: average(stats.map((s) => s.estPoints)),
-      avgTips: average(stats.map((s) => s.total.tips)),
+      avgEstPoints: average(full.map((s) => s.estPoints)),
+      avgTips: average(full.map((s) => s.total.tips)),
       nectarAccuracy: pooledAccuracy(stats, 'nectar'),
       pollenAccuracy: pooledAccuracy(stats, 'pollen'),
       overallAccuracy: pooledAccuracy(stats, 'all'),
-      leaveRate: rate(stats.map((s) => s.leave)),
-      autoParkRate: rate(stats.map((s) => s.autoPark)),
-      teleopParkRate: rate(stats.map((s) => s.teleopPark)),
-      avgSwarmPoints: average(stats.map((s) => s.swarmPoints)),
+      leaveRate: rate(full.map((s) => s.leave)),
+      autoParkRate: rate(full.map((s) => s.autoPark)),
+      teleopParkRate: rate(full.map((s) => s.teleopPark)),
+      avgSwarmPoints: average(full.map((s) => s.swarmPoints)),
     })
   }
   return out

@@ -61,6 +61,10 @@ export interface Report {
   events: MatchEvent[]
   toggles: Toggles
   post: PostMatch
+  /** The recording missed part of the match (ended early or was stopped). */
+  incomplete?: boolean
+  /** The clock was stopped at least once, so event times drift from the real match. */
+  paused?: boolean
   createdAt: number
   updatedAt: number
   deleted: boolean

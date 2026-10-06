@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useData } from '../app/data'
 import { PerMatchChart } from '../components/PerMatchChart'
-import { Card, Empty, Page, Segmented, Stat } from '../components/ui'
+import { Card, Empty, IncompleteBadge, Page, Segmented, Stat } from '../components/ui'
 import { summarizeTeams } from '../lib/grouping'
 import { matchLabel, matchPath, matchTypeOf } from '../lib/matches'
 import { average, formatNum, formatPct, thresholdsFor } from '../lib/scoring'
@@ -56,7 +56,8 @@ export function TeamDetailPage() {
   if (!summary) return <Page>{header}<Empty title="No recordings for this team" /></Page>
 
   const st = summary.stats
-  const avg = (f: (s: (typeof st)[number]) => number) => formatNum(average(st.map(f)))
+  const full = st.filter((_, i) => !summary.reports[i].incomplete)
+  const avg = (f: (s: (typeof st)[number]) => number) => formatNum(average(full.map(f)))
   const thresholds = thresholdsFor(tournament)
   const notes = summary.reports.flatMap((r) =>
     [r.pre.notes, r.post.strategyNotes].filter((n) => n.trim()).map((n, i) => ({ key: `${r.id}-${i}`, match: matchLabel(matchTypeOf(r.pre), r.pre.matchNumber), text: n })),
@@ -132,6 +133,7 @@ export function TeamDetailPage() {
                 <span className="flex items-center gap-2">
                   <span className={`h-2 w-2 rounded-full ${r.pre.alliance === 'blue' ? 'bg-blue' : 'bg-red'}`} />
                   <span className="tnum">{matchLabel(matchTypeOf(r.pre), r.pre.matchNumber)}</span>
+                  {r.incomplete && <IncompleteBadge />}
                 </span>
                 <span className="tnum text-ink-2">
                   {st[i].total.tips} tips · {formatPct(st[i].overallAccuracy)} · <span className="text-ink">{st[i].estPoints} pts</span>

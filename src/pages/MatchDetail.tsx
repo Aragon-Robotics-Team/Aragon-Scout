@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../app/auth'
 import { useData } from '../app/data'
 import { Timeline } from '../components/Timeline'
-import { Button, Card, Empty, Page, TeamChip, cx } from '../components/ui'
+import { Button, Card, Empty, IncompleteBadge, Page, TeamChip, cx } from '../components/ui'
 import { deleteReport } from '../lib/db'
 import { buildExport, downloadJson } from '../lib/exportData'
 import { groupMatches } from '../lib/grouping'
@@ -106,6 +106,7 @@ export function MatchDetailPage() {
             >
               <span className={cx('mr-1.5 inline-block h-2 w-2 rounded-full', r.pre.alliance === 'blue' ? 'bg-blue' : 'bg-red')} />
               {r.pre.teamNumber}
+              {r.incomplete && <span className="ml-1 text-warn" title="Incomplete recording">·</span>}
             </button>
           ))}
         </div>
@@ -162,6 +163,7 @@ export function ReportView({ report, tournament }: { report: Report; tournament:
             <div className="truncate text-lg font-semibold">
               <span className={report.pre.alliance === 'blue' ? 'text-blue' : 'text-red'}>{report.pre.teamNumber}</span>
               {report.pre.teamName && <span className="text-ink"> · {report.pre.teamName}</span>}
+              {report.incomplete && <IncompleteBadge className="ml-2 align-middle" />}
             </div>
             <div className="text-sm text-ink-2">
               {report.pre.alliance === 'blue' ? 'Blue' : 'Red'} alliance

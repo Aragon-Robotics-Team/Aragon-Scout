@@ -3,7 +3,7 @@
 Real-time match scouting for the FTC **BIOBUZZ** (2026–27) season. It's a dark-mode, phone-first PWA that works fully offline and syncs to Supabase when a connection returns.
 
 - **One account per team.** Every scout signs in with it, and many devices can record at once.
-- **Recording flow:** pre-match info, then **Auto 0:30**, an **8s transition** (taps still count as auto), and **Teleop 2:00**. After that come the post-match fields and Submit.
+- **Recording flow:** pre-match info and **Confirm**, then **Start** when the match starts: **Auto 0:30**, an **8s transition** (taps still count as auto), and **Teleop 2:00**. The period clock shows the 2:30 match clock beside it. **Stop**/**Start** pauses the clock mid-match, and **End match** finishes early. After that come the post-match fields and Submit. A recording that ended early or was stopped is labeled **incomplete**; it counts toward accuracy but not toward averages.
 - **Live tapping:** nectar/pollen score and miss, hive tips, Leave and Park toggles, and "into flower" buttons that appear at 1:00 left. Everything lands on a live timeline, with undo.
 - **My Matches:** one row per match, merged from every recording of that match. A ⚠ appears when recordings disagree.
 - **Tournament setup:**

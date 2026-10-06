@@ -272,3 +272,12 @@ export function TeamChip({ number, alliance, highlight }: { number: number; alli
     </span>
   )
 }
+
+/** Marks a recording that missed part of its match. */
+export function IncompleteBadge({ className }: { className?: string }) {
+  return (
+    <span className={cx('inline-block rounded-full border border-warn/40 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-warn', className)}>
+      Incomplete
+    </span>
+  )
+}
