@@ -6,7 +6,12 @@ Real-time match scouting for the FTC **BIOBUZZ** (2026–27) season. It's a dark
 - **Recording flow:** pre-match info and **Confirm**, then **Start** when the match starts: **Auto 0:30**, an **8s transition** (taps still count as auto), and **Teleop 2:00**. The period clock shows the 2:30 match clock beside it. **Stop**/**Start** pauses the clock mid-match, and **End match** finishes early. After that come the post-match fields and Submit. A recording that ended early or was stopped is labeled **incomplete**; it counts toward accuracy but not toward averages.
 - **Starting position:** picked on a field map in a popup. A tap snaps the robot to the nearest legal start (G304: own half, against the wall, clear of the loading zone and flowers), and dragging turns it. The map opens again from the match page and the live screen.
 - **Live tapping:** nectar/pollen score and miss, hive tips, Leave and Park toggles, and "into flower" buttons that appear at 1:00 left. Everything lands on a live timeline, with undo.
-- **My Matches:** one row per match, merged from every recording of that match. A ⚠ appears when recordings disagree.
+- **My Matches:** one row per match, merged from every recording of that match. Every recording is kept. When they disagree:
+  - **small differences** (≤2 balls, ≤3 points) only warn, and stats use the average;
+  - **large differences** and **hive tips that don't line up** (different counts, or a tip with no match within 5s in another scout's recording) say "needs fixing" and stay out of stats until someone taps **Resolve** on the match page to pick the right value (saved on the tournament; the recordings stay as entered) or **Keep as is**. Scouts also get a warning at Submit.
+  - Matching tips' times are averaged. Recordings whose clock was stopped count toward tip totals but not tip times.
+  - The limits are constants in `LIMITS` in `src/lib/consensus.ts`; there's no setting for them in the app.
+- **Alliance estimate:** each alliance's estimated total (end-of-match counts + tips + each scouted robot's leave/park) shows next to the entered score.
 - **Tournament setup:**
   - a **team list**: paste, add by hand, or fetch from FTCScout, which feeds a type-to-filter team name dropdown
   - a **qualification schedule**: typed into a grid, pasted, read from an FTC Live / MatchMaker **PDF** on the device, or fetched from FTCScout. Every source goes through a review grid before it's saved.

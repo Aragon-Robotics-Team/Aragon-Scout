@@ -19,7 +19,7 @@ export function TeamDetailPage() {
 
   const summary = useMemo(() => {
     const inScope = reports.filter((r) => r.pre.teamNumber === teamNumber && (!tournament || r.tournamentId === tournament.id))
-    return summarizeTeams(inScope, tournaments)[0]
+    return summarizeTeams(inScope, tournaments, reports)[0]
   }, [reports, tournaments, teamNumber, tournament])
 
   const setScope = (s: 'tournament' | 'all') => {

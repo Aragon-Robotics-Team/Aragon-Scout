@@ -116,6 +116,9 @@ export interface ScheduledMatch {
   blue: [number, number]
 }
 
+/** The agreed value for something recordings disagree on, or a decision to leave it as entered. */
+export type Resolution = { value: number } | { keep: true }
+
 export interface Tournament {
   id: string
   name: string
@@ -127,6 +130,8 @@ export interface Tournament {
   teams?: TournamentTeam[]
   /** Qualification schedule; optional on older tournaments. */
   schedule?: ScheduledMatch[]
+  /** Agreed values per match ("qual:12") and field ("redScore", "blue.tips", …); see src/lib/consensus.ts. */
+  resolutions?: Record<string, Partial<Record<string, Resolution>>>
   createdAt: number
   updatedAt: number
   deleted: boolean

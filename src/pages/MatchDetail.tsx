@@ -2,20 +2,22 @@ import { useMemo } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../app/auth'
 import { useData } from '../app/data'
+import { ConflictPanel } from '../components/Conflicts'
 import { StartPositionButton } from '../components/StartPosition'
 import { Timeline } from '../components/Timeline'
 import { Button, Card, Empty, IncompleteBadge, Page, TeamChip, cx } from '../components/ui'
-import { deleteReport } from '../lib/db'
+import { tipTimesLabel, withResolution, type Fact } from '../lib/consensus'
+import { deleteReport, saveTournament } from '../lib/db'
 import { buildExport, downloadJson } from '../lib/exportData'
-import { groupMatches } from '../lib/grouping'
+import { allianceEstimate, groupMatches } from '../lib/grouping'
 import { matchLabel, matchTitle, matchTypeOf, parseMatchParam } from '../lib/matches'
 import { ESTIMATE_NOTE, alliancePostPoints, formatPct, pointsFor, robotStats, winnerOf } from '../lib/scoring'
-import type { Report, Tournament } from '../lib/types'
+import type { Report, Resolution, Tournament } from '../lib/types'
 
 export function MatchDetailPage() {
   const { tid, match } = useParams()
   const [params, setParams] = useSearchParams()
-  const { reports, tournaments, base, loaded } = useData()
+  const { reports, tournaments, base, loaded, readOnly, db } = useData()
   const tournamentId = tid === 'none' ? null : (tid ?? null)
   const parsed = parseMatchParam(match)
   const matchType = parsed?.type ?? 'qual'
@@ -26,8 +28,9 @@ export function MatchDetailPage() {
     () =>
       groupMatches(
         reports.filter((r) => r.tournamentId === tournamentId && matchTypeOf(r.pre) === matchType && r.pre.matchNumber === matchNumber),
+        tournaments,
       )[0],
-    [reports, tournamentId, matchType, matchNumber],
+    [reports, tournaments, tournamentId, matchType, matchNumber],
   )
 
   if (!loaded) return <Page>{null}</Page>
@@ -46,6 +49,16 @@ export function MatchDetailPage() {
   const selectedId = params.get('r')
   const selected = group.reports.find((r) => r.id === selectedId) ?? group.reports[0]
   const winner = winnerOf(group.redScore, group.blueScore)
+  const points = pointsFor(tournament)
+  const score = (key: 'redScore' | 'blueScore') => {
+    const v = group[key]
+    if (v != null) return Number.isInteger(v) ? v : v.toFixed(1)
+    return group.facts.some((f) => f.key === key) ? '?' : '–'
+  }
+  const resolve =
+    !readOnly && db && tournament
+      ? (f: Fact, r: Resolution | null) => saveTournament(db, withResolution(tournament, group.matchType, group.matchNumber, f.key, r))
+      : undefined
 
   return (
     <Page>
@@ -58,11 +71,17 @@ export function MatchDetailPage() {
           <p className="text-sm text-ink-2">{tournament?.name ?? 'No tournament'}</p>
         </div>
         <div className="tnum text-right text-2xl font-semibold tracking-tight">
-          <span className={cx(winner === 'red' ? 'text-red' : 'text-ink-2')}>{group.redScore ?? '–'}</span>
+          <span className={cx(winner === 'red' ? 'text-red' : 'text-ink-2')}>{score('redScore')}</span>
           <span className="px-1.5 text-ink-3">–</span>
-          <span className={cx(winner === 'blue' ? 'text-blue' : 'text-ink-2')}>{group.blueScore ?? '–'}</span>
+          <span className={cx(winner === 'blue' ? 'text-blue' : 'text-ink-2')}>{score('blueScore')}</span>
           <div className="text-xs font-normal text-ink-3">
-            {winner === 'tie' ? 'Tie' : winner ? `${winner === 'red' ? 'Red' : 'Blue'} wins` : 'Score not entered'}
+            {winner === 'tie'
+              ? 'Tie'
+              : winner
+                ? `${winner === 'red' ? 'Red' : 'Blue'} wins`
+                : score('redScore') === '?' || score('blueScore') === '?'
+                  ? 'Scores disagree'
+                  : 'Score not entered'}
           </div>
         </div>
       </div>
@@ -77,20 +96,16 @@ export function MatchDetailPage() {
               ))}
               {(a === 'red' ? group.red : group.blue).length === 0 && <span className="text-sm text-ink-3">—</span>}
             </div>
+            <AllianceLine
+              estimate={allianceEstimate(group, a, points)}
+              entered={group[a === 'red' ? 'redScore' : 'blueScore']}
+              tips={tipTimesLabel(group.facts.find((f) => f.key === `${a}.tips`))}
+            />
           </div>
         ))}
       </div>
 
-      {group.conflicts.length > 0 && (
-        <div className="mb-4 rounded-xl border border-warn/40 bg-warn/10 px-3 py-2 text-sm">
-          <div className="font-medium text-warn">⚠ Recordings disagree</div>
-          <ul className="mt-1 list-disc pl-5 text-ink-2">
-            {group.conflicts.map((c) => (
-              <li key={c}>{c}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <ConflictPanel facts={group.facts} lineupIssues={group.lineupIssues} onResolve={resolve} />
 
       {group.reports.length > 1 && (
         <div role="tablist" className="mb-4 flex gap-2 overflow-x-auto">
@@ -115,6 +130,20 @@ export function MatchDetailPage() {
 
       <ReportView report={selected} tournament={tournament} />
     </Page>
+  )
+}
+
+function AllianceLine({ estimate, entered, tips }: { estimate: number | null; entered: number | null; tips: string | null }) {
+  if (estimate == null && tips == null) return null
+  return (
+    <div className="mt-1.5 text-[11px] text-ink-3">
+      {estimate != null && (
+        <div className="tnum" title={ESTIMATE_NOTE}>
+          Est. {estimate} pts*{entered != null && ` · entered ${Number.isInteger(entered) ? entered : entered.toFixed(1)}`}
+        </div>
+      )}
+      {tips && <div className="tnum truncate">Tips at {tips}</div>}
+    </div>
   )
 }
 

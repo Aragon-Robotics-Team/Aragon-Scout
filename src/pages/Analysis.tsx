@@ -25,7 +25,7 @@ export function AnalysisPage() {
   const teams = useMemo(() => {
     const inScope = scope === ALL ? reports : reports.filter((r) => r.tournamentId === scope)
     const q = query.trim().toLowerCase()
-    return summarizeTeams(inScope, tournaments)
+    return summarizeTeams(inScope, tournaments, reports)
       .filter((t) => !q || String(t.teamNumber).includes(q) || t.teamName.toLowerCase().includes(q))
       .sort((a, b) => SORTS[sort](a, b) || a.teamNumber - b.teamNumber)
   }, [reports, tournaments, scope, query, sort])

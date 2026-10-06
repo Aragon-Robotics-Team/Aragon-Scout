@@ -4,7 +4,8 @@ import { useAuth } from '../app/auth'
 import { useData, useDb } from '../app/data'
 import { LiveScoring } from '../components/LiveScoring'
 import { IncompleteToggle, PostMatchForm, PreMatchForm } from '../components/ReportForms'
-import { Button, Page } from '../components/ui'
+import { Button, Modal, Page } from '../components/ui'
+import { factMessage, matchFacts, needsFixing, resolutionsFor, type Fact } from '../lib/consensus'
 import { saveReport, saveTournament } from '../lib/db'
 import { matchLabel, matchPath, matchTypeOf } from '../lib/matches'
 import { mergeTeams, teamNameIndex, teamsOf } from '../lib/teams'
@@ -46,6 +47,8 @@ export function RecordPage() {
   const setReport = useCallback((report: Report) => update(() => ({ report })), [update])
   const setClock = useCallback((c: Clock) => update(() => c), [update])
 
+  // Disagreements with other recordings of this match, shown before submitting.
+  const [issues, setIssues] = useState<Fact[] | null>(null)
   const knownNames = useMemo(() => teamNameIndex(tournaments, reports), [tournaments, reports])
 
   const { report, stage } = draft
@@ -79,6 +82,16 @@ export function RecordPage() {
   }
 
   if (stage === 'post') {
+    const check = () => {
+      const others = reports.filter(
+        (r) => r.id !== report.id && r.tournamentId === report.tournamentId && matchTypeOf(r.pre) === matchTypeOf(report.pre) && r.pre.matchNumber === report.pre.matchNumber,
+      )
+      const found = matchFacts([...others, report], resolutionsFor(tournament, matchTypeOf(report.pre), report.pre.matchNumber ?? -1)).filter(
+        (f) => needsFixing(f) && f.entries.some((e) => e.reportId === report.id),
+      )
+      if (found.length > 0) setIssues(found)
+      else void submit()
+    }
     const submit = async () => {
       await saveReport(db, report)
       // A team typed in by hand joins the tournament's list so every device can pick it next time.
@@ -105,10 +118,28 @@ export function RecordPage() {
           <Button variant="ghost" onClick={discard}>
             Discard
           </Button>
-          <Button variant="primary" className="px-8" onClick={submit}>
+          <Button variant="primary" className="px-8" onClick={check}>
             Submit
           </Button>
         </div>
+        <Modal open={issues != null} onClose={() => setIssues(null)} title="Other recordings disagree">
+          <p className="text-sm text-ink-2">Another scout recorded this match differently:</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+            {issues?.map((f) => (
+              <li key={f.key}>{factMessage(f)}</li>
+            ))}
+          </ul>
+          <p className="mt-3 text-xs text-ink-3">
+            Check your numbers while the match is fresh. If yours are right, submit anyway — both recordings are kept and the match page will ask
+            someone to pick the right value.
+          </p>
+          <div className="mt-4 flex justify-between">
+            <Button onClick={() => setIssues(null)}>Check my entries</Button>
+            <Button variant="primary" onClick={() => void submit()}>
+              Submit anyway
+            </Button>
+          </div>
+        </Modal>
       </Page>
     )
   }

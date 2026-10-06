@@ -24,8 +24,8 @@ export function MatchesPage() {
 
   const groups = useMemo(() => {
     const inScope = scope === ALL ? reports : reports.filter((r) => r.tournamentId === scope)
-    return groupMatches(inScope).filter((g) => matchesQuery(g, query.trim()))
-  }, [reports, scope, query])
+    return groupMatches(inScope, tournaments).filter((g) => matchesQuery(g, query.trim()))
+  }, [reports, tournaments, scope, query])
 
   // In "all tournaments", section the list by tournament.
   const sections = useMemo(() => {
@@ -92,7 +92,8 @@ function AllianceCell({ alliance, teams }: { alliance: Alliance; teams: MatchGro
 }
 
 function MatchRow({ group: g, href }: { group: MatchGroup; href: string }) {
-  const scored = g.redScore != null || g.blueScore != null
+  const unsettled = (key: 'redScore' | 'blueScore') => g.facts.some((f) => f.key === key && f.value == null)
+  const scored = g.redScore != null || g.blueScore != null || unsettled('redScore') || unsettled('blueScore')
   return (
     <Link
       to={href}
@@ -106,9 +107,9 @@ function MatchRow({ group: g, href }: { group: MatchGroup; href: string }) {
         <span className="flex items-center gap-1">
         {scored ? (
           <>
-            <span className={cx(g.redScore != null && g.blueScore != null && g.redScore > g.blueScore ? 'font-semibold text-ink' : 'text-ink-2')}>{g.redScore ?? '–'}</span>
+            <span className={cx(g.redScore != null && g.blueScore != null && g.redScore > g.blueScore ? 'font-semibold text-ink' : 'text-ink-2')}>{g.redScore ?? (unsettled('redScore') ? '?' : '–')}</span>
             <span className="text-ink-3">–</span>
-            <span className={cx(g.redScore != null && g.blueScore != null && g.blueScore > g.redScore ? 'font-semibold text-ink' : 'text-ink-2')}>{g.blueScore ?? '–'}</span>
+            <span className={cx(g.redScore != null && g.blueScore != null && g.blueScore > g.redScore ? 'font-semibold text-ink' : 'text-ink-2')}>{g.blueScore ?? (unsettled('blueScore') ? '?' : '–')}</span>
           </>
         ) : (
           <span className="text-ink-3">—</span>
@@ -116,7 +117,7 @@ function MatchRow({ group: g, href }: { group: MatchGroup; href: string }) {
         </span>
         {g.conflicts.length > 0 && (
           <span title={g.conflicts.join('\n')} className="text-[10px] text-warn">
-            ⚠ check
+            {g.needsFixing > 0 ? '⚠ fix' : '⚠ check'}
           </span>
         )}
       </div>
