@@ -5,7 +5,7 @@ import { PerMatchChart } from '../components/PerMatchChart'
 import { Card, Empty, IncompleteBadge, Page, Segmented, Stat } from '../components/ui'
 import { summarizeTeams } from '../lib/grouping'
 import { matchLabel, matchPath, matchTypeOf } from '../lib/matches'
-import { average, formatNum, formatPct, thresholdsFor } from '../lib/scoring'
+import { ESTIMATE_NOTE, average, formatNum, formatPct, thresholdsFor } from '../lib/scoring'
 
 export function TeamDetailPage() {
   const { team } = useParams()
@@ -67,8 +67,8 @@ export function TeamDetailPage() {
     <Page>
       {header}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Stat label="Est. robot pts" value={formatNum(summary.avgEstPoints)} sub="avg per match" />
-        <Stat label="Hive tips" value={formatNum(summary.avgTips)} sub={`avg · RP at ${thresholds.pollinator1Tips} & ${thresholds.pollinator2Tips}`} />
+        <Stat label="Est. robot pts*" value={formatNum(summary.avgEstPoints)} sub="avg per match" />
+        <Stat label="Alliance tips*" value={formatNum(summary.avgTips)} sub={`avg in their matches · RP at ${thresholds.pollinator1Tips} & ${thresholds.pollinator2Tips}`} />
         <Stat label="Nectar accuracy" value={formatPct(summary.nectarAccuracy)} sub={`${st.reduce((n, s) => n + s.total.nectarScored, 0)} scored`} />
         <Stat label="Pollen accuracy" value={formatPct(summary.pollenAccuracy)} sub={`${st.reduce((n, s) => n + s.total.pollenScored, 0)} scored`} />
         <Stat label="Leave" value={formatPct(summary.leaveRate)} sub="of matches" />
@@ -76,9 +76,10 @@ export function TeamDetailPage() {
         <Stat label="Teleop park" value={formatPct(summary.teleopParkRate)} sub="of matches" />
         <Stat label="Leave + park" value={formatNum(summary.avgSwarmPoints)} sub={`avg pts · Swarm RP at ${thresholds.swarmPoints}`} />
       </div>
+      <p className="mt-2 text-[11px] text-ink-3">* {ESTIMATE_NOTE}</p>
 
       <Card className="mt-4 p-4">
-        <h2 className="mb-3 text-sm font-medium">Estimated robot points per match</h2>
+        <h2 className="mb-3 text-sm font-medium">Estimated robot points per match*</h2>
         <PerMatchChart
           bars={summary.reports.map((r, i) => ({
             key: r.id,
@@ -106,7 +107,7 @@ export function TeamDetailPage() {
               ['Nectar missed', avg((s) => s.auto.nectarMissed), avg((s) => s.teleop.nectarMissed)],
               ['Pollen scored', avg((s) => s.auto.pollenScored), avg((s) => s.teleop.pollenScored)],
               ['Pollen missed', avg((s) => s.auto.pollenMissed), avg((s) => s.teleop.pollenMissed)],
-              ['Hive tips', avg((s) => s.auto.tips), avg((s) => s.teleop.tips)],
+              ['Alliance tips', avg((s) => s.auto.tips), avg((s) => s.teleop.tips)],
               ['Into flower', '—', avg((s) => s.teleop.flowerNectar + s.teleop.flowerPollen)],
             ].map(([label, a, t]) => (
               <tr key={label} className="border-t border-line">

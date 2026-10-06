@@ -34,6 +34,7 @@ export function newReport(tournamentId: string | null, scoutingTeam: number | nu
       blueScore: null,
       strategyNotes: '',
     },
+    allianceTips: true,
     createdAt: now,
     updatedAt: now,
     deleted: false,

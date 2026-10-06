@@ -4,7 +4,7 @@ import { useData } from '../app/data'
 import { ALL, TournamentSelect } from '../components/TournamentSelect'
 import { Empty, Page, SearchInput, Segmented } from '../components/ui'
 import { summarizeTeams, type TeamSummary } from '../lib/grouping'
-import { formatNum, formatPct } from '../lib/scoring'
+import { ESTIMATE_NOTE, formatNum, formatPct } from '../lib/scoring'
 
 type Sort = 'points' | 'accuracy' | 'matches' | 'team'
 
@@ -69,7 +69,7 @@ export function AnalysisPage() {
             <span>Team</span>
             <span className="text-right">Matches</span>
             <span className="text-right">Acc.</span>
-            <span className="text-right">Est. pts</span>
+            <span className="text-right" title={ESTIMATE_NOTE}>Est. pts*</span>
           </div>
           <ul className="space-y-2">
             {teams.map((t) => (
@@ -91,6 +91,7 @@ export function AnalysisPage() {
           </ul>
         </>
       )}
+      {teams.length > 0 && <p className="mt-3 text-[11px] text-ink-3">* {ESTIMATE_NOTE}</p>}
     </Page>
   )
 }

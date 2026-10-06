@@ -17,7 +17,7 @@ Real-time match scouting for the FTC **BIOBUZZ** (2026–27) season. It's a dark
 
 Point values default to Competition Manual V1, Table 10-2 and Table 10-3. They can be edited per tournament.
 
-> **Tip scoring note.** "Hive tip" is tapped only when the *scouted robot's* launch tips the hive, and it's credited fully to that robot. This rule may change. The attribution lives in `robotStats()` in `src/lib/scoring.ts`.
+> **Tip scoring note.** "Hive tip" is tapped for every tip by the scout's *alliance*, whichever robot caused it. Tips count toward the alliance's total, and a robot's estimated points include its alliance's tips, so they're labeled "Estimated score is influenced by alliance member performance." Recordings made before this rule (no `allianceTips` flag) only tapped the scouted robot's tips; they still count, but aren't checked against other scouts. The attribution lives in `robotStats()` in `src/lib/scoring.ts`.
 
 ## Run locally
 

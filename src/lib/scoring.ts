@@ -13,6 +13,9 @@ export const DEFAULT_POINTS: PointValues = {
   gardenBall: 1,
 }
 
+/** Shown wherever estimated robot points appear, since they include the alliance's tips. */
+export const ESTIMATE_NOTE = 'Estimated score is influenced by alliance member performance.'
+
 export const DEFAULT_THRESHOLDS: RpThresholds = {
   swarmPoints: 16,
   pollinator1Tips: 4,
@@ -43,10 +46,9 @@ export interface RobotStats {
   /** LEAVE + PARK points (feeds the alliance's SWARM RP). */
   swarmPoints: number
   /**
-   * Points this robot earned directly: leave, parks, and hive tips.
-   * NOTE: a "tip" is currently recorded only when the scouted robot's launch
-   * tips the hive, and is credited fully to that robot. This rule may change
-   * (e.g. to alliance-level tips) — keep tip attribution in this function.
+   * Leave, parks, and the alliance's hive tips. Scouts tap every tip by their
+   * alliance, whichever robot caused it, so this includes partners' work
+   * (see ESTIMATE_NOTE). Older recordings only tapped the scouted robot's tips.
    */
   estPoints: number
 }

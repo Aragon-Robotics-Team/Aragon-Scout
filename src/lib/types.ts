@@ -79,6 +79,8 @@ export interface Report {
   incomplete?: boolean
   /** The clock was stopped at least once, so event times drift from the real match. */
   paused?: boolean
+  /** Tips were tapped for the whole alliance, not only the scouted robot's. Missing on older recordings. */
+  allianceTips?: boolean
   createdAt: number
   updatedAt: number
   deleted: boolean

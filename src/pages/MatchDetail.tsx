@@ -9,7 +9,7 @@ import { deleteReport } from '../lib/db'
 import { buildExport, downloadJson } from '../lib/exportData'
 import { groupMatches } from '../lib/grouping'
 import { matchLabel, matchTitle, matchTypeOf, parseMatchParam } from '../lib/matches'
-import { alliancePostPoints, formatPct, pointsFor, robotStats, winnerOf } from '../lib/scoring'
+import { ESTIMATE_NOTE, alliancePostPoints, formatPct, pointsFor, robotStats, winnerOf } from '../lib/scoring'
 import type { Report, Tournament } from '../lib/types'
 
 export function MatchDetailPage() {
@@ -176,12 +176,13 @@ export function ReportView({ report, tournament }: { report: Report; tournament:
               <StartPositionButton value={report.pre.start} alliance={report.pre.alliance} />
             </div>
           )}
-          <div className="text-right">
+          <div className="text-right" title={ESTIMATE_NOTE}>
             <div className="tnum text-2xl font-semibold">{s.estPoints}</div>
-            <div className="text-[11px] text-ink-3">est. robot pts</div>
+            <div className="text-[11px] text-ink-3">est. robot pts*</div>
           </div>
         </div>
         {report.pre.notes && <p className="mt-3 whitespace-pre-wrap text-sm text-ink-2">{report.pre.notes}</p>}
+        <p className="mt-2 text-[11px] text-ink-3">* {ESTIMATE_NOTE}</p>
       </Card>
 
       <Card className="p-4">
@@ -204,7 +205,7 @@ export function ReportView({ report, tournament }: { report: Report; tournament:
             <Row label="Nectar accuracy" auto={acc(a.nectarScored, a.nectarMissed)} teleop={acc(t.nectarScored, t.nectarMissed)} total={formatPct(s.nectarAccuracy)} />
             <Row label="Pollen scored" auto={`${a.pollenScored}/${a.pollenScored + a.pollenMissed}`} teleop={`${t.pollenScored}/${t.pollenScored + t.pollenMissed}`} total={`${tot.pollenScored}/${tot.pollenScored + tot.pollenMissed}`} />
             <Row label="Pollen accuracy" auto={acc(a.pollenScored, a.pollenMissed)} teleop={acc(t.pollenScored, t.pollenMissed)} total={formatPct(s.pollenAccuracy)} />
-            <Row label="Hive tips" auto={a.tips} teleop={t.tips} total={tot.tips} />
+            <Row label={report.allianceTips ? 'Alliance tips' : 'Hive tips'} auto={a.tips} teleop={t.tips} total={tot.tips} />
             <Row label="Into flower" auto="—" teleop={`${t.flowerNectar} N · ${t.flowerPollen} P`} total={t.flowerNectar + t.flowerPollen} />
           </tbody>
         </table>
