@@ -15,16 +15,18 @@ export function EditReportPage() {
   const knownNames = useMemo(() => teamNameIndex(tournaments, reports), [tournaments, reports])
   if (!loaded) return <Page>{null}</Page>
   if (!original) return <Page title="Edit recording"><Empty title="Recording not found" /></Page>
-  return <Editor key={original.id} original={original} tournaments={tournaments} knownNames={knownNames} />
+  return <Editor key={original.id} original={original} tournaments={tournaments} reports={reports} knownNames={knownNames} />
 }
 
 function Editor({
   original,
   tournaments,
+  reports,
   knownNames,
 }: {
   original: Report
   tournaments: Tournament[]
+  reports: Report[]
   knownNames: Map<number, string>
 }) {
   const db = useDb()
@@ -62,6 +64,8 @@ function Editor({
             value={report.pre}
             knownNames={knownNames}
             tournament={tournaments.find((t) => t.id === report.tournamentId)}
+            reports={reports}
+            reportId={report.id}
             onChange={(pre) => setReport({ ...report, pre })}
           />
         </section>

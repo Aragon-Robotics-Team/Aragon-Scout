@@ -1,7 +1,8 @@
 import { compareMatches, matchTypeOf } from './matches'
 import { average, pointsFor, robotStats, type RobotStats } from './scoring'
 import { teamNameIndex } from './teams'
-import type { Alliance, MatchType, Report, Tournament } from './types'
+import { findScheduledMatch, slotFill } from './schedule'
+import type { Alliance, MatchType, PreMatch, Report, Tournament } from './types'
 
 export interface AllianceTeam {
   number: number
@@ -99,6 +100,40 @@ export function groupMatches(reports: Report[]): MatchGroup[] {
   return groups.sort((a, b) =>
     compareMatches({ type: a.matchType, number: a.matchNumber }, { type: b.matchType, number: b.matchNumber }),
   )
+}
+
+export interface Lineup {
+  partnerTeam: number | null
+  opponentTeams: [number | null, number | null]
+}
+
+/**
+ * The other three robots in the scout's match: from the qual schedule when it
+ * lists this team, otherwise from other recordings of the same match.
+ */
+export function suggestLineup(pre: PreMatch, tournament: Tournament | undefined, reports: Report[], selfId: string): Lineup | null {
+  if (pre.matchNumber == null || pre.teamNumber == null || pre.alliance == null) return null
+  const type = matchTypeOf(pre)
+  const scheduled = type === 'qual' ? findScheduledMatch(tournament, pre.matchNumber) : undefined
+  if (scheduled) {
+    const own = pre.alliance === 'red' ? scheduled.red : scheduled.blue
+    const index = own.indexOf(pre.teamNumber)
+    if (index === 0 || index === 1) {
+      const fill = slotFill(scheduled, pre.alliance, index)
+      return { partnerTeam: fill.partnerTeam, opponentTeams: fill.opponentTeams }
+    }
+  }
+  const others = reports.filter(
+    (r) => r.id !== selfId && r.tournamentId === (tournament?.id ?? null) && matchTypeOf(r.pre) === type && r.pre.matchNumber === pre.matchNumber,
+  )
+  const [g] = groupMatches(others)
+  if (!g) return null
+  const own = (pre.alliance === 'red' ? g.red : g.blue).map((t) => t.number).filter((n) => n !== pre.teamNumber)
+  const opp = (pre.alliance === 'red' ? g.blue : g.red).map((t) => t.number).filter((n) => n !== pre.teamNumber)
+  // Too many names on a side means the recordings disagree; don't guess.
+  if (own.length > 1 || opp.length > 2) return null
+  const lineup: Lineup = { partnerTeam: own[0] ?? null, opponentTeams: [opp[0] ?? null, opp[1] ?? null] }
+  return lineup.partnerTeam == null && lineup.opponentTeams.every((n) => n == null) ? null : lineup
 }
 
 export interface TeamSummary {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildExport, parseImport } from './exportData'
 import { newReport, newTournament } from './factories'
-import { groupMatches, summarizeTeams } from './grouping'
+import { groupMatches, suggestLineup, summarizeTeams } from './grouping'
 import { shouldAcceptRemote } from './merge'
 import { alliancePostPoints, robotStats, winnerOf } from './scoring'
 import { FLOWER_UNLOCK_MS, MATCH_MS, clockElapsed, matchRemaining, phaseAt, remainingInStage, stageAt } from './timing'
@@ -187,6 +187,26 @@ describe('grouping', () => {
     t.points.teleopTip = 30
     const r = report({ match: 1, team: 8, alliance: 'red', tournamentId: t.id, events: [[50_000, 'tip']] })
     expect(summarizeTeams([r], [t])[0].avgEstPoints).toBe(30)
+  })
+})
+
+describe('lineup suggestions', () => {
+  it('comes from the qual schedule when it lists the team', () => {
+    const t = newTournament('Sched')
+    t.schedule = [{ match: 4, red: [1, 2], blue: [3, 4] }]
+    const r = report({ match: 4, team: 4, alliance: 'blue', tournamentId: t.id })
+    expect(suggestLineup(r.pre, t, [], r.id)).toEqual({ partnerTeam: 3, opponentTeams: [1, 2] })
+  })
+
+  it('falls back to other recordings of the same playoff', () => {
+    const t = newTournament('Playoffs')
+    const other = report({ match: 2, team: 10, alliance: 'red', partner: 11, opponents: [20, 21], tournamentId: t.id })
+    other.pre.matchType = 'playoff'
+    const mine = report({ match: 2, team: 20, alliance: 'blue', tournamentId: t.id })
+    mine.pre.matchType = 'playoff'
+    expect(suggestLineup(mine.pre, t, [other, mine], mine.id)).toEqual({ partnerTeam: 21, opponentTeams: [10, 11] })
+    mine.pre.matchType = 'qual'
+    expect(suggestLineup(mine.pre, t, [other, mine], mine.id)).toBeNull()
   })
 })
 

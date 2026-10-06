@@ -1,9 +1,11 @@
+import { useEffect, useMemo } from 'react'
+import { suggestLineup, type Lineup } from '../lib/grouping'
 import { matchTypeOf } from '../lib/matches'
 import { findScheduledMatch, scheduleOf, slotFill } from '../lib/schedule'
 import { winnerOf } from '../lib/scoring'
 import { teamsOf } from '../lib/teams'
 import type { Alliance, MatchType, PostMatch, PreMatch, Report, ScheduledMatch, Toggles, Tournament } from '../lib/types'
-import { TeamCombobox } from './TeamCombobox'
+import { TeamCombobox, TeamNumberField } from './TeamCombobox'
 import { AlliancePicker, Label, NumberInput, Segmented, Stepper, TextArea, TextInput, cx } from './ui'
 
 export function PreMatchForm({
@@ -11,6 +13,8 @@ export function PreMatchForm({
   onChange,
   knownNames,
   tournament,
+  reports,
+  reportId,
 }: {
   value: PreMatch
   onChange(v: PreMatch): void
@@ -18,6 +22,10 @@ export function PreMatchForm({
   knownNames?: Map<number, string>
   /** Supplies the team list and qualification schedule, when set up. */
   tournament?: Tournament
+  /** Other recordings, to suggest the rest of the lineup when the schedule doesn't cover this match. */
+  reports?: Report[]
+  /** The recording being filled in, so it isn't its own source. */
+  reportId?: string
 }) {
   const set = <K extends keyof PreMatch>(k: K, v: PreMatch[K]) => onChange({ ...value, [k]: v })
   const other = value.alliance === 'red' ? 'Blue' : value.alliance === 'blue' ? 'Red' : 'Opposing'
@@ -26,6 +34,16 @@ export function PreMatchForm({
   const scheduled = type === 'qual' ? findScheduledMatch(tournament, value.matchNumber) : undefined
   const teams = teamsOf(tournament)
   const nameOf = (n: number | null) => (n != null ? knownNames?.get(n) : undefined)
+
+  const lineup = useMemo(() => suggestLineup(value, tournament, reports ?? [], reportId ?? ''), [value, tournament, reports, reportId])
+  const lineupKey = lineup ? JSON.stringify(lineup) : ''
+  const blank = value.partnerTeam == null && value.opponentTeams.every((n) => n == null)
+  const differs = lineup != null && !sameLineup(lineup, value)
+  // Fill an empty lineup as soon as one is known; anything already typed only gets a suggestion.
+  useEffect(() => {
+    if (lineup && blank) onChange({ ...value, ...lineup })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when a new lineup appears
+  }, [lineupKey])
 
   // Swap in the known name for a new team number, unless the scout typed a custom one.
   const withTeamNumber = (v: PreMatch, n: number | null): PreMatch => {
@@ -90,20 +108,33 @@ export function PreMatchForm({
       <div>
         <Label hint="optional">Other teams in this match</Label>
         <div className="grid grid-cols-3 gap-2">
-          <NumberInput label={`${own} partner`} value={value.partnerTeam} onChange={(v) => set('partnerTeam', v)} placeholder="#" />
-          <NumberInput
+          <TeamNumberField label={`${own} partner`} value={value.partnerTeam} teams={teams} nameOf={nameOf} onChange={(v) => set('partnerTeam', v)} />
+          <TeamNumberField
             label={`${other} 1`}
             value={value.opponentTeams[0]}
+            teams={teams}
+            nameOf={nameOf}
             onChange={(v) => set('opponentTeams', [v, value.opponentTeams[1]])}
-            placeholder="#"
           />
-          <NumberInput
+          <TeamNumberField
             label={`${other} 2`}
             value={value.opponentTeams[1]}
+            teams={teams}
+            nameOf={nameOf}
             onChange={(v) => set('opponentTeams', [value.opponentTeams[0], v])}
-            placeholder="#"
+            alignRight
           />
         </div>
+        {differs && !blank && (
+          <button
+            type="button"
+            onClick={() => onChange({ ...value, ...lineup })}
+            className="mt-1 w-full rounded-xl border border-dashed border-line px-3 py-2 text-left text-xs text-ink-2 hover:border-ink-3 hover:text-ink"
+          >
+            {type === 'qual' && scheduled ? 'Schedule says' : 'Other recordings say'}: partner {lineup.partnerTeam ?? '—'}, opponents{' '}
+            {lineup.opponentTeams.map((n) => n ?? '—').join(' & ')} · <span className="font-medium text-ink">Use</span>
+          </button>
+        )}
       </div>
       <TextArea label="Notes" value={value.notes} onChange={(e) => set('notes', e.target.value)} rows={3} />
     </div>
@@ -268,4 +299,8 @@ export function IncompleteToggle({ report, onChange }: { report: Report; onChang
       </p>
     </div>
   )
+}
+
+function sameLineup(a: Lineup, b: Lineup): boolean {
+  return a.partnerTeam === b.partnerTeam && a.opponentTeams[0] === b.opponentTeams[0] && a.opponentTeams[1] === b.opponentTeams[1]
 }

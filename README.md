@@ -9,7 +9,7 @@ Real-time match scouting for the FTC **BIOBUZZ** (2026–27) season. It's a dark
 - **Tournament setup:**
   - a **team list**: paste, add by hand, or fetch from FTCScout, which feeds a type-to-filter team name dropdown
   - a **qualification schedule**: typed into a grid, pasted, read from an FTC Live / MatchMaker **PDF** on the device, or fetched from FTCScout. Every source goes through a review grid before it's saved.
-- **Schedule-aware recording:** for a scheduled qual, enter the match # and tap one of the 4 robots to fill in the team, alliance, partner and opponents. Qual and playoff matches are kept apart (Q12 / P3).
+- **Schedule-aware recording:** for a scheduled qual, enter the match # and tap one of the 4 robots to fill in the team, alliance, partner and opponents. Partner and opponent fields take a team number or name. When the schedule doesn't cover a match (playoffs), the lineup is filled from other recordings of that match; anything already typed only gets a suggestion. Qual and playoff matches are kept apart (Q12 / P3).
 - **Tournament analysis:** per-team averages, accuracy, park rates, estimated robot points, and a per-match chart.
 - **JSON export** (one match, one tournament, or everything) and import.
 - **Optional public sharing** as a read-only link `/t/<team#>`. Only your team's signed-in scouts can ever write.

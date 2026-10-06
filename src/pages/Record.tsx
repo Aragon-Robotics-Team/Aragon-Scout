@@ -142,7 +142,14 @@ export function RecordPage() {
           </>
         )}
       </div>
-      <PreMatchForm value={pre} knownNames={knownNames} tournament={tournament} onChange={(p) => setReport({ ...report, pre: p })} />
+      <PreMatchForm
+        value={pre}
+        knownNames={knownNames}
+        tournament={tournament}
+        reports={reports}
+        reportId={report.id}
+        onChange={(p) => setReport({ ...report, pre: p })}
+      />
       <div className="mt-8">
         <Button
           variant="primary"
