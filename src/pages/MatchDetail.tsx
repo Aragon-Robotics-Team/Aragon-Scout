@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../app/auth'
 import { useData } from '../app/data'
+import { StartPositionButton } from '../components/StartPosition'
 import { Timeline } from '../components/Timeline'
 import { Button, Card, Empty, IncompleteBadge, Page, TeamChip, cx } from '../components/ui'
 import { deleteReport } from '../lib/db'
@@ -170,6 +171,11 @@ export function ReportView({ report, tournament }: { report: Report; tournament:
               {report.pre.startingPosition && <> · starts {report.pre.startingPosition}</>}
             </div>
           </div>
+          {report.pre.start && (
+            <div className="w-28 shrink-0 self-center">
+              <StartPositionButton value={report.pre.start} alliance={report.pre.alliance} />
+            </div>
+          )}
           <div className="text-right">
             <div className="tnum text-2xl font-semibold">{s.estPoints}</div>
             <div className="text-[11px] text-ink-3">est. robot pts</div>

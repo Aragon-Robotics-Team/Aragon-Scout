@@ -18,6 +18,17 @@ export interface MatchEvent {
   phase: Phase
 }
 
+/**
+ * Where a robot starts, in inches on the field as seen from the audience (red
+ * on the left, y down), and which way its front faces in degrees clockwise
+ * from the top wall. See src/lib/field.ts.
+ */
+export interface StartPose {
+  x: number
+  y: number
+  heading: number
+}
+
 export interface PreMatch {
   /** Missing on recordings made before playoffs were tracked — treat as 'qual'. */
   matchType?: MatchType
@@ -25,7 +36,10 @@ export interface PreMatch {
   teamName: string
   teamNumber: number | null
   alliance: Alliance | null
+  /** Typed description; only recordings from before the map have this. */
   startingPosition: string
+  /** Picked on the field map; missing on older recordings. */
+  start?: StartPose | null
   notes: string
   /** The scouted robot's alliance partner. */
   partnerTeam: number | null

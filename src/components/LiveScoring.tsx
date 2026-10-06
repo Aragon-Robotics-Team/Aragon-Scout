@@ -4,6 +4,7 @@ import { FLOWER_UNLOCK_MS, MATCH_MS, clockElapsed, formatClock, matchRemaining, 
 import type { EventType, Report } from '../lib/types'
 import { Timeline } from './Timeline'
 import { ToggleButton } from './ReportForms'
+import { StartPositionButton } from './StartPosition'
 import { Button, cx } from './ui'
 
 const STAGE_LABEL = { auto: 'Auto', transition: 'Transition', teleop: 'Teleop', done: 'Done' } as const
@@ -111,6 +112,7 @@ export function LiveScoring({
           {tournamentName && <div className="max-w-[12rem] truncate text-xs text-ink-3">{tournamentName}</div>}
           <div className="tnum">{matchLabel(matchTypeOf(report.pre), report.pre.matchNumber)}</div>
           <div className="flex items-center justify-end gap-2">
+            {report.pre.start && <StartPositionButton value={report.pre.start} alliance={report.pre.alliance} compact />}
             <span className="tnum font-medium" style={{ color: nectar }}>
               {report.pre.teamNumber}
             </span>

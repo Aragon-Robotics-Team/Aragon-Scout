@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react'
+import { useEffect, useRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from 'react'
 import type { Alliance } from '../lib/types'
 
 export function cx(...classes: (string | false | null | undefined)[]): string {
@@ -279,5 +279,36 @@ export function IncompleteBadge({ className }: { className?: string }) {
     <span className={cx('inline-block rounded-full border border-warn/40 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-warn', className)}>
       Incomplete
     </span>
+  )
+}
+
+/** A centered popup; Escape or a tap on the backdrop closes it. */
+export function Modal({ open, onClose, title, children }: { open: boolean; onClose(): void; title: string; children: ReactNode }) {
+  const ref = useRef<HTMLDialogElement>(null)
+  useEffect(() => {
+    const d = ref.current
+    if (!d) return
+    if (open && !d.open) d.showModal()
+    if (!open && d.open) d.close()
+  }, [open])
+  return (
+    <dialog
+      ref={ref}
+      onClose={onClose}
+      onClick={(e) => e.target === ref.current && onClose()}
+      className="m-auto w-[min(26rem,calc(100vw-2rem))] rounded-2xl border border-line bg-surface p-0 text-ink backdrop:bg-black/60"
+    >
+      {open && (
+        <div className="p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-base font-semibold">{title}</h2>
+            <button type="button" onClick={onClose} className="rounded-md px-2 py-1 text-sm text-ink-2 hover:text-ink" aria-label="Close">
+              ✕
+            </button>
+          </div>
+          {children}
+        </div>
+      )}
+    </dialog>
   )
 }

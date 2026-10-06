@@ -5,8 +5,9 @@ import { findScheduledMatch, scheduleOf, slotFill } from '../lib/schedule'
 import { winnerOf } from '../lib/scoring'
 import { teamsOf } from '../lib/teams'
 import type { Alliance, MatchType, PostMatch, PreMatch, Report, ScheduledMatch, Toggles, Tournament } from '../lib/types'
+import { StartPositionField } from './StartPosition'
 import { TeamCombobox, TeamNumberField } from './TeamCombobox'
-import { AlliancePicker, Label, NumberInput, Segmented, Stepper, TextArea, TextInput, cx } from './ui'
+import { AlliancePicker, Label, NumberInput, Segmented, Stepper, TextArea, cx } from './ui'
 
 export function PreMatchForm({
   value,
@@ -77,7 +78,7 @@ export function PreMatchForm({
           onPick={(alliance, index) => {
             const fill = slotFill(scheduled, alliance, index)
             const next = withTeamNumber({ ...value, teamName: '' }, fill.teamNumber)
-            onChange({ ...next, alliance: fill.alliance, partnerTeam: fill.partnerTeam, opponentTeams: fill.opponentTeams })
+            onChange({ ...withAlliance(next, fill.alliance), partnerTeam: fill.partnerTeam, opponentTeams: fill.opponentTeams })
           }}
         />
       )}
@@ -96,14 +97,8 @@ export function PreMatchForm({
         />
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <AlliancePicker label="Alliance" value={value.alliance} onChange={(v) => set('alliance', v)} />
-        <TextInput
-          label="Starting position"
-          value={value.startingPosition}
-          onChange={(e) => set('startingPosition', e.target.value)}
-          placeholder="e.g. near hive"
-          autoComplete="off"
-        />
+        <AlliancePicker label="Alliance" value={value.alliance} onChange={(v) => onChange(withAlliance(value, v))} />
+        <StartPositionField value={value.start} legacy={value.startingPosition} alliance={value.alliance} onChange={(v) => set('start', v)} />
       </div>
       <div>
         <Label hint="optional">Other teams in this match</Label>
@@ -299,6 +294,11 @@ export function IncompleteToggle({ report, onChange }: { report: Report; onChang
       </p>
     </div>
   )
+}
+
+/** A start picked for one alliance is on the wrong half for the other, so switching clears it. */
+function withAlliance(v: PreMatch, alliance: Alliance | null): PreMatch {
+  return alliance === v.alliance ? v : { ...v, alliance, start: null }
 }
 
 function sameLineup(a: Lineup, b: Lineup): boolean {
