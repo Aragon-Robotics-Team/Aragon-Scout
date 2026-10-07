@@ -8,6 +8,7 @@ import { Button, Modal, Page } from '../components/ui'
 import { factMessage, matchFacts, needsFixing, resolutionsFor, type Fact } from '../lib/consensus'
 import { saveReport, saveTournament } from '../lib/db'
 import { matchLabel, matchPath, matchTypeOf } from '../lib/matches'
+import { pointsFor } from '../lib/scoring'
 import { mergeTeams, teamNameIndex, teamsOf } from '../lib/teams'
 import { newReport } from '../lib/factories'
 import { readJson, removeKey, writeJson } from '../lib/storage'
@@ -112,7 +113,7 @@ export function RecordPage() {
         <p className="-mt-3 mb-5 text-sm text-ink-3">
           {tournament?.name ?? 'No tournament'} · {matchLabel(matchTypeOf(report.pre), report.pre.matchNumber)} · Team {report.pre.teamNumber}
         </p>
-        <PostMatchForm value={report.post} alliance={report.pre.alliance} onChange={(post) => setReport({ ...report, post })} />
+        <PostMatchForm value={report.post} alliance={report.pre.alliance} points={pointsFor(tournament)} onChange={(post) => setReport({ ...report, post })} />
         <IncompleteToggle report={report} onChange={setReport} />
         <div className="mt-8 flex items-center justify-between">
           <Button variant="ghost" onClick={discard}>

@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type PointerEvent } from 'react'
+import { useId, useRef, useState, type PointerEvent, type ReactNode } from 'react'
 import {
   FIELD,
   FLOWERS,
@@ -26,18 +26,21 @@ function hexagon(x: number, y: number, r: number): string {
 }
 
 /** Top-down BIOBUZZ field, red on the left, with an optional robot at its start. */
-function FieldMap({
+export function FieldMap({
   pose,
   alliance,
   showLegal,
   detailed = true,
+  children,
 }: {
-  pose: StartPose | null | undefined
+  pose?: StartPose | null
   alliance: Alliance | null
   /** Shade the strip where this alliance may legally start. */
   showLegal?: boolean
   /** Small previews skip the grid and scoring elements. */
   detailed?: boolean
+  /** Drawn on top, in field inches. */
+  children?: ReactNode
 }) {
   const clip = useId()
   const color = allianceColor(alliance)
@@ -100,6 +103,7 @@ function FieldMap({
         {hiveCell(74.5, 52, 'blue')}
         {hiveCell(74.5, 79, 'blue')}
         {pose && <Robot pose={pose} color={color} />}
+        {children}
       </g>
       <rect width={FIELD} height={FIELD} rx={3} fill="none" stroke="var(--color-ink-3)" strokeWidth={1} />
     </>

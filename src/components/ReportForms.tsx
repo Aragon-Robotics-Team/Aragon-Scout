@@ -1,10 +1,12 @@
 import { useEffect, useMemo } from 'react'
 import { suggestLineup, type Lineup } from '../lib/grouping'
+import { emptyFlowers, flowerTotals } from '../lib/flowers'
 import { matchTypeOf } from '../lib/matches'
 import { findScheduledMatch, scheduleOf, slotFill } from '../lib/schedule'
 import { winnerOf } from '../lib/scoring'
 import { teamsOf } from '../lib/teams'
-import type { Alliance, MatchType, PostMatch, PreMatch, Report, ScheduledMatch, Toggles, Tournament } from '../lib/types'
+import type { Alliance, FlowerBall, MatchType, PointValues, PostMatch, PreMatch, Report, ScheduledMatch, Toggles, Tournament } from '../lib/types'
+import { FlowerInput } from './Flowers'
 import { StartPositionField } from './StartPosition'
 import { TeamCombobox, TeamNumberField } from './TeamCombobox'
 import { AlliancePicker, Label, NumberInput, Segmented, Stepper, TextArea, cx } from './ui'
@@ -140,28 +142,34 @@ export function PostMatchForm({
   value,
   onChange,
   alliance,
+  points,
 }: {
   value: PostMatch
   onChange(v: PostMatch): void
   alliance: PreMatch['alliance']
+  points?: PointValues
 }) {
   const set = <K extends keyof PostMatch>(k: K, v: PostMatch[K]) => onChange({ ...value, [k]: v })
+  // The two flower counts are kept in step with the flowers, for the scout's own alliance.
+  const setFlowers = (flowers: FlowerBall[][]) => onChange({ ...value, flowers, ...(alliance ? flowerTotals(flowers, alliance) : {}) })
+  const typedEarlier = !value.flowers && (value.bottomNectarFlowers != null || value.ownedFlowerBalls != null)
   const winner = winnerOf(value.redScore, value.blueScore)
   const allianceName = alliance === 'red' ? 'Red' : alliance === 'blue' ? 'Blue' : 'Your'
 
   return (
     <div className="space-y-5">
       <div>
+        <FlowerInput value={value.flowers ?? emptyFlowers()} onChange={setFlowers} points={points} />
+        {typedEarlier && (
+          <p className="mt-2 text-xs text-ink-3">
+            Typed earlier: {value.bottomNectarFlowers ?? 0} bottom nectar flowers, {value.ownedFlowerBalls ?? 0} balls in owned flowers. Entering
+            the flowers replaces these.
+          </p>
+        )}
+      </div>
+      <div>
         <p className="mb-3 text-xs text-ink-3">{allianceName} alliance totals at the end of the match</p>
         <div className="grid grid-cols-2 gap-3">
-          <Stepper
-            label="Bottom nectar flowers"
-            hint="0–4"
-            max={4}
-            value={value.bottomNectarFlowers}
-            onChange={(v) => set('bottomNectarFlowers', v)}
-          />
-          <Stepper label="Balls in owned flowers" value={value.ownedFlowerBalls} onChange={(v) => set('ownedFlowerBalls', v)} />
           <Stepper label="Balls in garden" value={value.gardenBalls} onChange={(v) => set('gardenBalls', v)} />
           <Stepper label="Balls left in cell" value={value.cellBalls} onChange={(v) => set('cellBalls', v)} />
         </div>

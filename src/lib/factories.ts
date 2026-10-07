@@ -1,3 +1,4 @@
+import { emptyFlowers } from './flowers'
 import { DEFAULT_POINTS, DEFAULT_THRESHOLDS } from './scoring'
 import type { Report, Tournament } from './types'
 
@@ -26,8 +27,9 @@ export function newReport(tournamentId: string | null, scoutingTeam: number | nu
     events: [],
     toggles: { leave: false, autoPark: false, teleopPark: false },
     post: {
-      bottomNectarFlowers: null,
-      ownedFlowerBalls: null,
+      flowers: emptyFlowers(),
+      bottomNectarFlowers: 0,
+      ownedFlowerBalls: 0,
       gardenBalls: null,
       cellBalls: null,
       redScore: null,

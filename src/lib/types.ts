@@ -54,7 +54,17 @@ export interface Toggles {
 }
 
 /** Alliance-level results, entered after the match for the scouted robot's alliance. */
+/** A ball in a flower: pollen, or nectar of an alliance's color. */
+export type FlowerBall = 'pollen' | Alliance
+
 export interface PostMatch {
+  /**
+   * The balls in each flower's scoring volume, bottom → top, in the order of
+   * FLOWERS in src/lib/field.ts. Missing on recordings made before the flower
+   * screen; those typed the two counts below by hand.
+   */
+  flowers?: FlowerBall[][] | null
+  /** For the scout's alliance; worked out from `flowers` when they're entered. */
   bottomNectarFlowers: number | null
   ownedFlowerBalls: number | null
   gardenBalls: number | null

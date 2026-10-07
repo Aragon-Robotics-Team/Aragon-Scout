@@ -3,10 +3,12 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../app/auth'
 import { useData } from '../app/data'
 import { ConflictPanel } from '../components/Conflicts'
+import { FlowerMap, FlowerSummary } from '../components/Flowers'
 import { StartPositionButton } from '../components/StartPosition'
 import { Timeline } from '../components/Timeline'
 import { Button, Card, Empty, IncompleteBadge, Page, TeamChip, cx } from '../components/ui'
 import { tipTimesLabel, withResolution, type Fact } from '../lib/consensus'
+import { FLOWER_NAMES } from '../lib/flowers'
 import { deleteReport, saveTournament } from '../lib/db'
 import { buildExport, downloadJson } from '../lib/exportData'
 import { allianceEstimate, groupMatches } from '../lib/grouping'
@@ -235,7 +237,10 @@ export function ReportView({ report, tournament }: { report: Report; tournament:
             <Row label="Pollen scored" auto={`${a.pollenScored}/${a.pollenScored + a.pollenMissed}`} teleop={`${t.pollenScored}/${t.pollenScored + t.pollenMissed}`} total={`${tot.pollenScored}/${tot.pollenScored + tot.pollenMissed}`} />
             <Row label="Pollen accuracy" auto={acc(a.pollenScored, a.pollenMissed)} teleop={acc(t.pollenScored, t.pollenMissed)} total={formatPct(s.pollenAccuracy)} />
             <Row label={report.allianceTips ? 'Alliance tips' : 'Hive tips'} auto={a.tips} teleop={t.tips} total={tot.tips} />
-            <Row label="Into flower" auto="—" teleop={`${t.flowerNectar} N · ${t.flowerPollen} P`} total={t.flowerNectar + t.flowerPollen} />
+            {/* Per-robot flower taps only exist on recordings from before the flower screen. */}
+            {t.flowerNectar + t.flowerPollen > 0 && (
+              <Row label="Into flower" auto="—" teleop={`${t.flowerNectar} N · ${t.flowerPollen} P`} total={t.flowerNectar + t.flowerPollen} />
+            )}
           </tbody>
         </table>
         <div className="mt-3 flex flex-wrap gap-2 text-sm">
@@ -270,6 +275,19 @@ export function ReportView({ report, tournament }: { report: Report; tournament:
             </div>
           ))}
         </dl>
+        {post.flowers && (
+          <div className="mt-3 grid grid-cols-[8rem_1fr] items-center gap-3 border-t border-line pt-3">
+            <FlowerMap flowers={post.flowers} />
+            <ul className="space-y-1 text-xs">
+              {post.flowers.map((stack, i) => (
+                <li key={i}>
+                  <span className="text-ink-3">{FLOWER_NAMES[i]}: </span>
+                  <FlowerSummary stack={stack} points={points} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {post.strategyNotes && <p className="mt-3 whitespace-pre-wrap border-t border-line pt-3 text-sm text-ink-2">{post.strategyNotes}</p>}
       </Card>
 

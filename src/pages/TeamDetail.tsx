@@ -108,7 +108,6 @@ export function TeamDetailPage() {
               ['Pollen scored', avg((s) => s.auto.pollenScored), avg((s) => s.teleop.pollenScored)],
               ['Pollen missed', avg((s) => s.auto.pollenMissed), avg((s) => s.teleop.pollenMissed)],
               ['Alliance tips', avg((s) => s.auto.tips), avg((s) => s.teleop.tips)],
-              ['Into flower', '—', avg((s) => s.teleop.flowerNectar + s.teleop.flowerPollen)],
             ].map(([label, a, t]) => (
               <tr key={label} className="border-t border-line">
                 <th scope="row" className="py-2 text-left font-normal text-ink-2">

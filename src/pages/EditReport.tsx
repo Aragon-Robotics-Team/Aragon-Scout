@@ -5,6 +5,7 @@ import { IncompleteToggle, PostMatchForm, PreMatchForm, TogglesForm } from '../c
 import { Button, Empty, Label, Page } from '../components/ui'
 import { saveReport } from '../lib/db'
 import { matchPath } from '../lib/matches'
+import { pointsFor } from '../lib/scoring'
 import { teamNameIndex } from '../lib/teams'
 import type { Report, Tournament } from '../lib/types'
 
@@ -75,7 +76,12 @@ function Editor({
         </section>
         <section>
           <h2 className="mb-3 text-sm font-medium text-ink-2">After the match</h2>
-          <PostMatchForm value={report.post} alliance={report.pre.alliance} onChange={(post) => setReport({ ...report, post })} />
+          <PostMatchForm
+            value={report.post}
+            alliance={report.pre.alliance}
+            points={pointsFor(tournaments.find((t) => t.id === report.tournamentId))}
+            onChange={(post) => setReport({ ...report, post })}
+          />
           <IncompleteToggle report={report} onChange={setReport} />
         </section>
       </div>

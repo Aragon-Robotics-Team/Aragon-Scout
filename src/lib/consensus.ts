@@ -1,5 +1,6 @@
 import { formatElapsed, phaseAt } from './timing'
-import type { Alliance, Report, Resolution, Tournament } from './types'
+import { flowerCountsFor } from './flowers'
+import type { Alliance, FlowerBall, Report, Resolution, Tournament } from './types'
 
 /**
  * How far apart recordings of one match may be before they need fixing.
@@ -31,7 +32,7 @@ export interface Fact {
   key: FactKey
   label: string
   /** One entry per recording that filled this in. */
-  entries: { reportId: string; teamNumber: number | null; value: number }[]
+  entries: { reportId: string; teamNumber: number | null; value: number; flowers?: FlowerBall[][] }[]
   /** agreed: all equal · small: within LIMITS, warn only · large: needs fixing */
   status: 'agreed' | 'small' | 'large'
   /** What explains a large tip disagreement, beyond differing counts. */
@@ -130,7 +131,11 @@ export function matchFacts(reports: Report[], resolutions: Partial<Record<FactKe
     const recs = reports.filter((r) => r.pre.alliance === alliance)
     for (const c of COUNTS) {
       const key: FactKey = `${alliance}.${c}`
-      const entries = recs.flatMap((r) => (r.post[c] != null ? [{ reportId: r.id, teamNumber: r.pre.teamNumber, value: r.post[c]! }] : []))
+      const entries = (c === 'bottomNectarFlowers' || c === 'ownedFlowerBalls' ? reports : recs).flatMap((r) => {
+        // Flowers entered on the flower screen cover both alliances; typed counts only the scout's own.
+        const value = c === 'bottomNectarFlowers' || c === 'ownedFlowerBalls' ? flowerCountsFor(r.post, r.pre.alliance, alliance)?.[c] : r.post[c]
+        return value != null ? [{ reportId: r.id, teamNumber: r.pre.teamNumber, value, flowers: r.post.flowers ?? undefined }] : []
+      })
       facts.push(numberFact(key, `${cap(alliance)} ${COUNT_LABELS[c]}`, entries, LIMITS.balls, resolutions[key]))
     }
     facts.push(tipsFact(alliance, recs, resolutions[`${alliance}.tips`]))
