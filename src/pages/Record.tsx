@@ -31,7 +31,7 @@ export function RecordPage() {
   const [draft, setDraftState] = useState<Draft>(() => {
     const saved = readJson<Draft>(draftKey)
     if (saved) return { ...saved, pausedAt: saved.pausedAt ?? null, pausedMs: saved.pausedMs ?? 0 }
-    return { report: newReport(currentTournamentId, account!.teamNumber), stage: 'pre', startedAt: null, pausedAt: null, pausedMs: 0 }
+    return { report: newReport(currentTournamentId, account!.org!.teamNumber, { userId: account!.userId, username: account!.username }), stage: 'pre', startedAt: null, pausedAt: null, pausedMs: 0 }
   })
   const setDraft = useCallback(
     (d: Draft) => {

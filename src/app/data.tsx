@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { openDb, type ScoutDB } from '../lib/db'
+import { deleteLegacyDatabases, openDb, type ScoutDB } from '../lib/db'
 import { supabase } from '../lib/supabase'
 import { SyncEngine, type SyncStatus } from '../lib/sync'
 import { readJson, writeJson } from '../lib/storage'
@@ -40,12 +40,15 @@ export function useDb(): ScoutDB {
 
 const noopSync = { status: 'local' as const, pending: 0, error: null, syncNow() {} }
 
-export function LocalDataProvider({ account, children }: { account: Account; children: ReactNode }) {
-  const db = useMemo(() => openDb(account.userId), [account.userId])
-  const engine = useMemo(
-    () => (supabase && account.userId !== 'local' ? new SyncEngine(db, supabase, account.userId, account.teamNumber) : null),
-    [db, account.userId, account.teamNumber],
-  )
+/** The signed-in app's data: the team's local copy, synced with the server. Needs a team. */
+export function LocalDataProvider({ account, children }: { account: Account & { org: NonNullable<Account['org']> }; children: ReactNode }) {
+  const orgId = account.org.id
+  const db = useMemo(() => openDb(account.userId, orgId), [account.userId, orgId])
+  const engine = useMemo(() => (supabase && orgId !== 'local' ? new SyncEngine(db, supabase, orgId) : null), [db, orgId])
+
+  useEffect(() => {
+    void deleteLegacyDatabases()
+  }, [])
 
   useEffect(() => {
     engine?.start()

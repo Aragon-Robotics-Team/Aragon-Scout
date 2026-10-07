@@ -13,6 +13,7 @@ import { PublicTeamPage } from './pages/PublicTeam'
 import { RecordPage } from './pages/Record'
 import { SignInPage } from './pages/SignIn'
 import { TeamDetailPage } from './pages/TeamDetail'
+import { TeamSetupPage } from './pages/TeamSetup'
 import { TournamentDetailPage } from './pages/TournamentDetail'
 import { TournamentsPage } from './pages/Tournaments'
 
@@ -20,8 +21,9 @@ function PrivateApp() {
   const { account, loading } = useAuth()
   if (loading) return null
   if (!account) return <SignInPage />
+  if (!account.org) return <TeamSetupPage />
   return (
-    <LocalDataProvider key={account.userId} account={account}>
+    <LocalDataProvider key={`${account.userId}-${account.org.id}`} account={{ ...account, org: account.org }}>
       <Layout>
         <Routes>
           <Route path="/" element={<HomePage />} />

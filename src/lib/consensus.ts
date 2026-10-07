@@ -32,7 +32,7 @@ export interface Fact {
   key: FactKey
   label: string
   /** One entry per recording that filled this in. */
-  entries: { reportId: string; teamNumber: number | null; value: number; flowers?: FlowerBall[][] }[]
+  entries: { reportId: string; teamNumber: number | null; value: number; flowers?: FlowerBall[][]; scout?: string }[]
   /** agreed: all equal · small: within LIMITS, warn only · large: needs fixing */
   status: 'agreed' | 'small' | 'large'
   /** What explains a large tip disagreement, beyond differing counts. */
@@ -90,7 +90,7 @@ function tipsFact(alliance: Alliance, recs: Report[], resolution: Resolution | u
   const key: FactKey = `${alliance}.tips`
   const label = `${cap(alliance)} alliance tips`
   const tipsOf = (r: Report) => r.events.filter((e) => e.type === 'tip').map((e) => e.t)
-  const entries = recs.map((r) => ({ reportId: r.id, teamNumber: r.pre.teamNumber, value: tipsOf(r).length }))
+  const entries = recs.map((r) => ({ reportId: r.id, teamNumber: r.pre.teamNumber, scout: r.recordedBy?.username, value: tipsOf(r).length }))
   const current = recs.filter((r) => r.allianceTips)
 
   // Older recordings only tapped their own robot's tips: each robot adds its own, unchecked.
@@ -124,7 +124,7 @@ export function matchFacts(reports: Report[], resolutions: Partial<Record<FactKe
     ['redScore', 'Red score'],
     ['blueScore', 'Blue score'],
   ] as const) {
-    const entries = reports.flatMap((r) => (r.post[key] != null ? [{ reportId: r.id, teamNumber: r.pre.teamNumber, value: r.post[key]! }] : []))
+    const entries = reports.flatMap((r) => (r.post[key] != null ? [{ reportId: r.id, teamNumber: r.pre.teamNumber, scout: r.recordedBy?.username, value: r.post[key]! }] : []))
     facts.push(numberFact(key, label, entries, LIMITS.points, resolutions[key]))
   }
   for (const alliance of ['red', 'blue'] as const) {
@@ -134,7 +134,7 @@ export function matchFacts(reports: Report[], resolutions: Partial<Record<FactKe
       const entries = (c === 'bottomNectarFlowers' || c === 'ownedFlowerBalls' ? reports : recs).flatMap((r) => {
         // Flowers entered on the flower screen cover both alliances; typed counts only the scout's own.
         const value = c === 'bottomNectarFlowers' || c === 'ownedFlowerBalls' ? flowerCountsFor(r.post, r.pre.alliance, alliance)?.[c] : r.post[c]
-        return value != null ? [{ reportId: r.id, teamNumber: r.pre.teamNumber, value, flowers: r.post.flowers ?? undefined }] : []
+        return value != null ? [{ reportId: r.id, teamNumber: r.pre.teamNumber, scout: r.recordedBy?.username, value, flowers: r.post.flowers ?? undefined }] : []
       })
       facts.push(numberFact(key, `${cap(alliance)} ${COUNT_LABELS[c]}`, entries, LIMITS.balls, resolutions[key]))
     }

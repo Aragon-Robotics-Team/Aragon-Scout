@@ -92,6 +92,17 @@ export function saveTheme(t: ThemeSettings): void {
   applyTheme(t)
 }
 
+const DEVICE_ONLY_KEY = 'as.theme-device-only'
+
+/** True when this device keeps its own theme instead of following the account's. */
+export function isDeviceOnly(): boolean {
+  return readJson<boolean>(DEVICE_ONLY_KEY) === true
+}
+
+export function setDeviceOnly(v: boolean): void {
+  writeJson(DEVICE_ONLY_KEY, v)
+}
+
 const pick = (list: Swatch[], id: string) => list.find((s) => s.id === id) ?? list[0]
 
 /** The base and the variable overrides a setting resolves to. */

@@ -1,19 +1,27 @@
 import { useState } from 'react'
-import { ACCENTS, BACKGROUNDS, CARDS, loadTheme, saveTheme, type Base, type Mode, type Swatch, type ThemeSettings } from '../lib/theme'
+import { useAuth } from '../app/auth'
+import { ACCENTS, BACKGROUNDS, CARDS, isDeviceOnly, loadTheme, saveTheme, setDeviceOnly, type Base, type Mode, type Swatch, type ThemeSettings } from '../lib/theme'
+import { ToggleButton } from './ReportForms'
 import { Card, Label, Segmented, cx } from './ui'
 
 /** Light, dark, follow the phone, or a custom theme built from checked swatches. */
 export function AppearanceCard() {
+  const { account, saveAccountTheme, localMode } = useAuth()
   const [theme, setTheme] = useState<ThemeSettings>(loadTheme)
+  const [deviceOnly, setDeviceOnlyState] = useState(isDeviceOnly)
   const update = (patch: Partial<ThemeSettings>) => {
     const next = { ...theme, ...patch }
     setTheme(next)
     saveTheme(next)
+    // Offline, it still applies here and is saved to the account next time.
+    if (!deviceOnly && account && !localMode) void saveAccountTheme(next).catch(() => {})
   }
   return (
     <Card className="mt-4 p-4">
       <h2 className="font-medium">Appearance</h2>
-      <p className="mb-3 mt-1 text-sm text-ink-2">Saved on this device. Red and blue always mean the alliances.</p>
+      <p className="mb-3 mt-1 text-sm text-ink-2">
+        {deviceOnly || localMode ? 'Saved on this device.' : 'Saved to your account, so it follows you to every device.'} Red and blue always mean the alliances.
+      </p>
       <Segmented<Mode>
         className="w-full [&>button]:flex-1"
         value={theme.mode}
@@ -43,6 +51,22 @@ export function AppearanceCard() {
           <Swatches label="Background" list={BACKGROUNDS[theme.base]} value={theme.background} onChange={(background) => update({ background })} />
           <Swatches label="Cards" list={CARDS[theme.base]} value={theme.card} onChange={(card) => update({ card })} />
         </div>
+      )}
+      {!localMode && (
+        <ToggleButton
+          className="mt-4 w-full"
+          label="Different theme on this device"
+          on={deviceOnly}
+          onChange={(v) => {
+            setDeviceOnly(v)
+            setDeviceOnlyState(v)
+            // Turning it off goes back to the account's theme.
+            if (!v && account?.theme) {
+              saveTheme(account.theme)
+              setTheme(account.theme)
+            }
+          }}
+        />
       )}
     </Card>
   )

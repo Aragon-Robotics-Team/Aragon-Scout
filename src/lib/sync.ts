@@ -37,14 +37,12 @@ export class SyncEngine {
 
   private db: ScoutDB
   private client: SupabaseClient
-  private userId: string
-  private teamNumber: number
+  private orgId: string
 
-  constructor(db: ScoutDB, client: SupabaseClient, userId: string, teamNumber: number) {
+  constructor(db: ScoutDB, client: SupabaseClient, orgId: string) {
     this.db = db
     this.client = client
-    this.userId = userId
-    this.teamNumber = teamNumber
+    this.orgId = orgId
   }
 
   start() {
@@ -115,7 +113,7 @@ export class SyncEngine {
       await this.pull<Report>('reports', this.db.reports)
       await this.push<Tournament>('tournaments', this.db.tournaments, () => ({}))
       await this.push<Report>('reports', this.db.reports, (doc) => ({
-        team_number: this.teamNumber,
+        recorded_by: doc.recordedBy?.userId ?? null,
         tournament_id: doc.tournamentId,
         match_number: doc.pre.matchNumber,
         scouted_team: doc.pre.teamNumber,
@@ -136,7 +134,7 @@ export class SyncEngine {
       const { data, error } = await this.client
         .from(table)
         .select('id, data, updated_at, server_updated_at')
-        .eq('owner', this.userId)
+        .eq('org_id', this.orgId)
         .gt('server_updated_at', since)
         .order('server_updated_at', { ascending: true })
         .range(offset, offset + PAGE - 1)
@@ -168,7 +166,7 @@ export class SyncEngine {
       const batch = dirty.slice(i, i + PAGE)
       const payload = batch.map(({ doc }) => ({
         id: doc.id,
-        owner: this.userId,
+        org_id: this.orgId,
         data: doc,
         deleted: doc.deleted,
         updated_at: doc.updatedAt,

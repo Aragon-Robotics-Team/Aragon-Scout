@@ -2,7 +2,7 @@
 
 Real-time match scouting for the FTC **BIOBUZZ** (2026–27) season. It's a phone-first PWA (dark, light, follow-the-phone, or a custom theme from Account → Appearance) that works fully offline and syncs to Supabase when a connection returns.
 
-- **One account per team.** Every scout signs in with it, and many devices can record at once.
+- **Individual accounts in a team.** Everyone signs up with an email, password and `@username`, then creates their FTC team or joins it (invite by username/email, or a join code). Roles: **owner** (one), **admins** (invite, remove, sharing, join code) and **members** (record and edit). Everyone on the team shares its tournaments and recordings, each recording shows who made it, and recordings stay when someone leaves.
 - **Recording flow:** pre-match info and **Confirm**, then **Start** when the match starts: **Auto 0:30**, an **8s transition** (taps still count as auto), and **Teleop 2:00**. The period clock shows the 2:30 match clock beside it. **Stop**/**Start** pauses the clock mid-match, and **End match** finishes early. After that come the post-match fields and Submit. A recording that ended early or was stopped is labeled **incomplete**; it counts toward accuracy but not toward averages.
 - **Starting position:** picked on a field map in a popup. A tap snaps the robot to the nearest legal start (G304: own half, against the wall, clear of the loading zone and flowers), and dragging turns it. The map opens again from the match page and the live screen.
 - **Live tapping:** nectar/pollen score and miss, hive tips, and Leave/Park toggles right under the clock. Park lights up for the last 15s of auto and of teleop. Everything lands on a half-height live timeline, with undo, and the whole screen fits a standard phone without scrolling.
@@ -23,7 +23,7 @@ Real-time match scouting for the FTC **BIOBUZZ** (2026–27) season. It's a phon
   - Scores are FTCScout's official non-penalty totals when the tournament has an event code and the device has been online (results are saved on the device); matches FTCScout doesn't have use each alliance's penalty-free estimate from your recordings.
   - A team needs 3+ matches to be rated, and the event needs at least 1.5 alliance scores per team.
 - **JSON export** (one match, one tournament, or everything) and import.
-- **Optional public sharing** as a read-only link `/t/<team#>`. Only your team's signed-in scouts can ever write.
+- **Optional public sharing** as a read-only link `/t/<team#>`, turned on by an owner or admin. Only your team's members can ever write.
 
 Point values default to Competition Manual V1, Table 10-2 and Table 10-3. They can be edited per tournament.
 
@@ -38,18 +38,18 @@ npm test           # unit tests: scoring, grouping, timing, sync merge, import/e
 npm run build      # production build + service worker in dist/
 ```
 
-Without Supabase keys the app runs in **local-only mode**: no accounts and no sync, with data kept on the device. That mode is useful for trying it out.
+Without Supabase keys the app runs in **local-only mode**: one offline user with no sync, teams or sharing, and data kept on the device. That mode is useful for trying it out.
 
 ## Set up Supabase (once)
 
 1. Create a project at [supabase.com](https://supabase.com). The free tier is fine.
-2. **SQL Editor → New query**: paste all of [`supabase/schema.sql`](supabase/schema.sql) and click **Run**. This creates:
-   - the `profiles`, `tournaments` and `reports` tables (each report is a `jsonb` document)
-   - Row Level Security:
-     - only the owning team can insert, update or delete
-     - reports must carry the owner's own team number
-     - reads are private unless the team turns on sharing
+2. **SQL Editor → New query**: paste all of [`supabase/schema.sql`](supabase/schema.sql) and click **Run**. It's safe to run again. This creates:
+   - `profiles` (one per person, unique `@username`), `organizations` (one per FTC team number), `memberships` and `invites`
+   - `tournaments` and `reports`, owned by an organization (each is a `jsonb` document)
+   - Row Level Security: only the team's members can read and write its data (reads are public if the team turns on sharing), and every team/member/invite change goes through server functions that check the caller's role
    - a last-write-wins guard for offline sync
+
+   > **Upgrading from the shared team logins (v1)?** Running the new schema **deletes the old team logins and all of their tournaments and recordings** (there's no undo), then sets up individual accounts. Export anything you want to keep from the Data page first. Afterwards every scout signs up for their own account, and each phone clears its old local copy at sign-in.
 3. **Authentication → Sign In / Providers → Email**: leave email + password enabled, with **Confirm email** on.
 4. **Authentication → URL Configuration**: set **Site URL** to your Vercel URL (e.g. `https://aragon-scout.vercel.app`) so confirmation links open the app.
 5. **Project Settings → API**: copy the **Project URL** and the **anon / publishable key** into `.env.local`:
@@ -88,5 +88,5 @@ src/lib/        types, BIOBUZZ timing & scoring, grouping/analysis, IndexedDB, s
 src/app/        auth + data providers (local DB for the team, read-only for public links)
 src/components/ live scoring screen, timeline, forms, chart, layout
 src/pages/      one file per screen
-supabase/       schema.sql (tables + RLS)
+supabase/       schema.sql (tables, RLS, team functions)
 ```

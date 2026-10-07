@@ -88,7 +88,7 @@ function ResolveDialog({ fact, onClose, onSave }: { fact: Fact; onClose(): void;
           >
             <span className="tnum text-lg font-semibold">{fmt(value)}</span>
             <span className="flex flex-col items-end gap-1 text-xs text-ink-3">
-              recorded by {entries.map((e) => (e.teamNumber != null ? `${e.teamNumber}'s scout` : 'a scout')).join(', ')}
+              recorded by {entries.map((e) => (e.scout ? `@${e.scout}` : e.teamNumber != null ? `${e.teamNumber}'s scout` : 'a scout')).join(', ')}
               {entries.map((e) => e.flowers && <MiniFlowers key={e.reportId} flowers={e.flowers} />)}
             </span>
           </button>

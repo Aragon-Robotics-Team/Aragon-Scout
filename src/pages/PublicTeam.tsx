@@ -12,13 +12,13 @@ import { TeamDetailPage } from './TeamDetail'
 
 type Loaded = { teamName: string; reports: Report[]; tournaments: Tournament[] }
 
-async function fetchAll<T>(table: 'reports' | 'tournaments', owner: string): Promise<T[]> {
+async function fetchAll<T>(table: 'reports' | 'tournaments', orgId: string): Promise<T[]> {
   const out: T[] = []
   for (let from = 0; ; from += 1000) {
     const { data, error } = await supabase!
       .from(table)
       .select('data, updated_at')
-      .eq('owner', owner)
+      .eq('org_id', orgId)
       .eq('deleted', false)
       .range(from, from + 999)
     if (error) throw new Error(error.message)
@@ -42,20 +42,20 @@ export function PublicTeamPage() {
     }
     let cancelled = false
     ;(async () => {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('id, team_name')
+      const { data: org, error } = await supabase
+        .from('organizations')
+        .select('id, name')
         .eq('team_number', teamNumber)
         .eq('is_public', true)
         .maybeSingle()
       if (error) throw new Error(error.message)
-      if (!profile) return cancelled || setState({ status: 'missing' })
+      if (!org) return cancelled || setState({ status: 'missing' })
       const [reports, tournaments] = await Promise.all([
-        fetchAll<Report>('reports', profile.id),
-        fetchAll<Tournament>('tournaments', profile.id),
+        fetchAll<Report>('reports', org.id),
+        fetchAll<Tournament>('tournaments', org.id),
       ])
       if (!cancelled) {
-        setState({ status: 'ok', teamName: profile.team_name, reports, tournaments: tournaments.sort((a, b) => b.createdAt - a.createdAt) })
+        setState({ status: 'ok', teamName: org.name, reports, tournaments: tournaments.sort((a, b) => b.createdAt - a.createdAt) })
       }
     })().catch((err) => !cancelled && setState({ status: 'error', message: err instanceof Error ? err.message : String(err) }))
     return () => {

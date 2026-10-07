@@ -34,9 +34,25 @@ export class ScoutDB extends Dexie {
   }
 }
 
-/** One local database per account, so two teams on one device never mix data. */
-export function openDb(userId: string): ScoutDB {
-  return new ScoutDB(`aragon-scout-${userId}`)
+const PREFIX = 'aragon-scout-v2-'
+
+/** One local database per person and team, so data from two teams on one device never mixes. */
+export function openDb(userId: string, orgId: string): ScoutDB {
+  return new ScoutDB(`${PREFIX}${userId}-${orgId}`)
+}
+
+/**
+ * Deletes local copies left by the old shared team accounts. Their data was
+ * removed from the server when individual accounts started.
+ */
+export async function deleteLegacyDatabases(): Promise<void> {
+  try {
+    for (const name of await Dexie.getDatabaseNames()) {
+      if (name.startsWith('aragon-scout-') && !name.startsWith(PREFIX)) await Dexie.delete(name)
+    }
+  } catch {
+    // Listing databases isn't supported everywhere; the old copies are just left unused.
+  }
 }
 
 export async function getMeta<T>(db: ScoutDB, key: string): Promise<T | undefined> {

@@ -79,8 +79,10 @@ export interface Report {
   id: string
   schemaVersion: 1
   tournamentId: string | null
-  /** Team number of the scouting account that recorded this. */
+  /** Team number of the organization that recorded this. */
   scoutingTeam: number | null
+  /** The scout who made the recording; missing on recordings from before individual accounts. */
+  recordedBy?: { userId: string; username: string } | null
   pre: PreMatch
   events: MatchEvent[]
   toggles: Toggles

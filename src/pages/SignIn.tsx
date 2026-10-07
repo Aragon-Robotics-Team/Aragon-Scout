@@ -8,6 +8,7 @@ export function SignInPage() {
   const [mode, setMode] = useState<'in' | 'up'>(localMode ? 'up' : 'in')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('')
   const [teamNumber, setTeamNumber] = useState<number | null>(null)
   const [teamName, setTeamName] = useState('')
   const [busy, setBusy] = useState(false)
@@ -22,8 +23,11 @@ export function SignInPage() {
     try {
       if (mode === 'in') await signIn(email.trim(), password)
       else {
-        if (teamNumber == null || teamNumber <= 0) throw new Error('Enter your team number.')
-        const needsConfirm = await signUp(email.trim(), password, teamNumber, teamName.trim())
+        const name = username.trim().replace(/^@/, '')
+        if (!/^[A-Za-z0-9_]{3,20}$/.test(name)) throw new Error('Usernames are 3–20 letters, numbers or _.')
+        // Local-only mode has no server for teams, so it asks for the team here.
+        if (localMode && (teamNumber == null || teamNumber <= 0)) throw new Error('Enter your team number.')
+        const needsConfirm = await signUp(email.trim(), password, name, localMode ? { number: teamNumber!, name: teamName.trim() } : undefined)
         if (needsConfirm) setConfirmSent(true)
       }
     } catch (err) {
@@ -39,7 +43,7 @@ export function SignInPage() {
         <div className="text-2xl">
           <Wordmark />
         </div>
-        <p className="mt-2 text-sm text-ink-2">One account per team. Every scout signs in with it.</p>
+        <p className="mt-2 text-sm text-ink-2">Everyone has their own account and joins their team.</p>
       </div>
 
       {confirmSent ? (
@@ -61,7 +65,7 @@ export function SignInPage() {
               onChange={(m) => { setMode(m); setError(null) }}
               options={[
                 { value: 'in', label: 'Sign in' },
-                { value: 'up', label: 'Create team account' },
+                { value: 'up', label: 'Create account' },
               ]}
             />
           )}
@@ -71,6 +75,18 @@ export function SignInPage() {
             </p>
           )}
           {mode === 'up' && (
+            <TextInput
+              label="Username"
+              hint="shown to your team"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="e.g. alex_k"
+              autoCapitalize="none"
+              autoComplete="username"
+              required
+            />
+          )}
+          {mode === 'up' && localMode && (
             <div className="grid grid-cols-[7rem_1fr] gap-3">
               <NumberInput label="Team #" value={teamNumber} onChange={setTeamNumber} />
               <TextInput label="Team name" value={teamName} onChange={(e) => setTeamName(e.target.value)} />

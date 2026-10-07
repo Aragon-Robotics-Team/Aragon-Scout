@@ -46,11 +46,11 @@ export function Layout({ children }: { children: ReactNode }) {
         <div className="mx-auto flex h-14 max-w-2xl items-center justify-between px-4">
           <Link
             to="/account"
-            aria-label={`Account, team ${account?.teamNumber}. ${s.text}`}
+            aria-label={`Account, team ${account?.org?.teamNumber}. ${s.text}`}
             title={s.text}
             className="relative flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface-2 text-[10px] font-semibold tnum text-ink-2"
           >
-            {account?.teamNumber}
+            {account?.org?.teamNumber}
             <span className={cx('absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-bg', s.color)} />
           </Link>
           <Link to="/" aria-label="Home">

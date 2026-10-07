@@ -2,19 +2,17 @@ import { useState } from 'react'
 import { useAuth } from '../app/auth'
 import { useData } from '../app/data'
 import { syncLabel } from '../components/Layout'
-import { ToggleButton } from '../components/ReportForms'
+import { TeamCard } from '../components/Team'
 import { AppearanceCard } from '../components/Appearance'
 import { Button, Card, Page, TextInput, cx } from '../components/ui'
 
 export function AccountPage() {
-  const { account, signOut, updateProfile, localMode } = useAuth()
+  const { account, signOut, updateUsername, localMode } = useAuth()
   const { sync, db } = useData()
-  const [teamName, setTeamName] = useState(account?.teamName ?? '')
+  const [username, setUsername] = useState(account?.username ?? '')
   const [error, setError] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
   if (!account) return null
   const s = syncLabel(sync.status, sync.pending)
-  const shareUrl = `${window.location.origin}/t/${account.teamNumber}`
 
   const run = async (fn: () => Promise<void>) => {
     setError(null)
@@ -35,34 +33,28 @@ export function AccountPage() {
     await db?.delete()
   }
 
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(shareUrl)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    } catch {
-      // clipboard blocked — the link is visible to copy by hand
-    }
-  }
-
   return (
     <Page title="Account">
       <Card className="p-4">
-        <div className="flex items-center gap-3">
-          <div className="tnum flex h-12 w-12 items-center justify-center rounded-full border border-line bg-surface-2 text-sm font-semibold">
-            {account.teamNumber}
-          </div>
-          <div className="min-w-0">
-            <div className="truncate font-medium">{account.teamName || `Team ${account.teamNumber}`}</div>
-            <div className="truncate text-sm text-ink-3">{localMode ? 'Local-only mode' : account.email}</div>
-          </div>
+        <div className="min-w-0">
+          <div className="truncate font-medium">@{account.username}</div>
+          <div className="truncate text-sm text-ink-3">{localMode ? 'Local-only mode' : account.email}</div>
         </div>
-        <div className="mt-4 flex items-end gap-2">
-          <TextInput className="flex-1" label="Team name" value={teamName} onChange={(e) => setTeamName(e.target.value)} />
-          <Button disabled={teamName.trim() === account.teamName} onClick={() => run(() => updateProfile({ teamName: teamName.trim() }))}>
-            Save
-          </Button>
-        </div>
+        {!localMode && (
+          <div className="mt-4 flex items-end gap-2">
+            <TextInput
+              className="flex-1"
+              label="Username"
+              hint="3–20 letters, numbers or _"
+              value={username}
+              autoCapitalize="none"
+              onChange={(e) => setUsername(e.target.value.replace(/^@/, ''))}
+            />
+            <Button disabled={username.trim() === account.username || !username.trim()} onClick={() => run(() => updateUsername(username.trim()))}>
+              Save
+            </Button>
+          </div>
+        )}
       </Card>
 
       <Card className="mt-4 p-4">
@@ -79,30 +71,14 @@ export function AccountPage() {
         </div>
         {sync.error && <p className="mt-2 text-xs text-red">{sync.error}</p>}
         <p className="mt-2 text-xs text-ink-3">
-          Recordings save on this device first and sync whenever there's a connection. Every device signed in to this account shares the same data.
+          Recordings save on this device first and sync whenever there's a connection. Everyone on your team shares the same data.
         </p>
       </Card>
 
-      {!localMode && (
-        <Card className="mt-4 p-4">
-          <h2 className="font-medium">Public sharing</h2>
-          <p className="mt-1 text-sm text-ink-2">
-            Anyone with the link can view your matches and analysis. Only your team's signed-in scouts can ever add or edit data.
-          </p>
-          <ToggleButton
-            className="mt-3 w-full"
-            label={account.isPublic ? 'Shared publicly' : 'Private'}
-            on={account.isPublic}
-            onChange={(v) => run(() => updateProfile({ isPublic: v }))}
-          />
-          {account.isPublic && (
-            <div className="mt-3 flex items-center gap-2">
-              <code className="min-w-0 flex-1 truncate rounded-lg bg-surface-2 px-3 py-2 text-xs text-ink-2">{shareUrl}</code>
-              <Button className="h-9 text-xs" onClick={copy}>
-                {copied ? 'Copied' : 'Copy'}
-              </Button>
-            </div>
-          )}
+      {account.org && !localMode && <TeamCard org={account.org} />}
+      {account.org && localMode && (
+        <Card className="mt-4 p-4 text-sm text-ink-2">
+          Team <span className="tnum text-ink">{account.org.teamNumber}</span> {account.org.name}. Teams, members and sharing need Supabase.
         </Card>
       )}
 

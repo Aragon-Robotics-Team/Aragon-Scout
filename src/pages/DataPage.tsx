@@ -11,7 +11,7 @@ export function DataPage() {
   const db = useDb()
   const fileRef = useRef<HTMLInputElement>(null)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
-  const team = account?.teamNumber ?? null
+  const team = account?.org?.teamNumber ?? null
   const current = tournaments.find((t) => t.id === currentTournamentId)
   const today = () => new Date().toISOString().slice(0, 10)
 

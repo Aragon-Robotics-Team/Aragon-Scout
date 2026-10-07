@@ -6,13 +6,18 @@ export function uuid(): string {
   return crypto.randomUUID()
 }
 
-export function newReport(tournamentId: string | null, scoutingTeam: number | null): Report {
+export function newReport(
+  tournamentId: string | null,
+  scoutingTeam: number | null,
+  recordedBy: Report['recordedBy'] = null,
+): Report {
   const now = Date.now()
   return {
     id: uuid(),
     schemaVersion: 1,
     tournamentId,
     scoutingTeam,
+    recordedBy,
     pre: {
       matchType: 'qual',
       matchNumber: null,

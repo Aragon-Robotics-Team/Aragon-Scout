@@ -133,6 +133,7 @@ export function MatchDetailPage() {
             >
               <span className={cx('mr-1.5 inline-block h-2 w-2 rounded-full', r.pre.alliance === 'blue' ? 'bg-blue' : 'bg-red')} />
               {r.pre.teamNumber}
+              {r.recordedBy && <span className="ml-1 text-xs text-ink-3">@{r.recordedBy.username}</span>}
               {r.incomplete && <span className="ml-1 text-warn" title="Incomplete recording">·</span>}
             </button>
           ))}
@@ -188,7 +189,7 @@ export function ReportView({ report, tournament }: { report: Report; tournament:
   const exportOne = () =>
     downloadJson(
       `match-${matchLabel(matchTypeOf(report.pre), report.pre.matchNumber)}-team-${report.pre.teamNumber}.json`,
-      buildExport([report], tournament ? [tournament] : [], account?.teamNumber ?? null),
+      buildExport([report], tournament ? [tournament] : [], account?.org?.teamNumber ?? null),
     )
   const remove = async () => {
     if (!db || !confirm(`Delete the recording of team ${report.pre.teamNumber} in ${matchTitle(matchTypeOf(report.pre), report.pre.matchNumber)}?`)) return
@@ -208,6 +209,7 @@ export function ReportView({ report, tournament }: { report: Report; tournament:
             </div>
             <div className="text-sm text-ink-2">
               {report.pre.alliance === 'blue' ? 'Blue' : 'Red'} alliance
+              {report.recordedBy && <> · by @{report.recordedBy.username}</>}
               {report.pre.startingPosition && <> · starts {report.pre.startingPosition}</>}
             </div>
           </div>
