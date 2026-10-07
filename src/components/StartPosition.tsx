@@ -110,7 +110,7 @@ export function FieldMap({
   )
 }
 
-function Robot({ pose, color }: { pose: StartPose; color: string }) {
+export function Robot({ pose, color }: { pose: StartPose; color: string }) {
   const r = ROBOT / 2
   return (
     <g transform={`translate(${pose.x} ${pose.y}) rotate(${pose.heading})`}>

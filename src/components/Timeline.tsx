@@ -3,7 +3,6 @@ import { AUTO_MS, FLOWER_UNLOCK_MS, MATCH_MS, TELEOP_START_MS, formatElapsed } f
 import type { Alliance, EventType, MatchEvent } from '../lib/types'
 import { cx } from './ui'
 
-const LANES = ['Nectar', 'Pollen', 'Tip'] as const
 const FULL_LANE_H = 22
 /** Lane height for the half-height live timeline. */
 const COMPACT_LANE_H = 12
@@ -23,10 +22,17 @@ const LABELS: Record<EventType, string> = {
   flower_pollen: 'Pollen in flower',
 }
 
-function laneOf(type: EventType): number {
-  if (type.startsWith('nectar') || type === 'flower_nectar') return 0
-  if (type.startsWith('pollen') || type === 'flower_pollen') return 1
-  return 2
+const allianceColor = (a: Alliance | null) => (a === 'blue' ? 'var(--color-blue)' : 'var(--color-red)')
+
+/** One mark on a lane. */
+export interface LaneEvent extends MatchEvent {
+  color: string
+}
+
+export interface Lane {
+  key: string
+  label: ReactNode
+  events: LaneEvent[]
 }
 
 function useWidth<T extends HTMLElement>() {
@@ -61,107 +67,124 @@ export function Timeline({
   /** Half-height lanes, for the live screen. */
   compact?: boolean
 }) {
+  const nectar = allianceColor(alliance)
+  const lane = (key: string, label: string, test: (t: EventType) => boolean, color: string): Lane => ({
+    key,
+    label,
+    events: events.filter((e) => test(e.type)).map((e) => ({ ...e, color })),
+  })
+  const lanes = [
+    lane('nectar', 'Nectar', (t) => t.startsWith('nectar') || t === 'flower_nectar', nectar),
+    lane('pollen', 'Pollen', (t) => t.startsWith('pollen') || t === 'flower_pollen', 'var(--color-pollen)'),
+    lane('tip', 'Tip', (t) => t === 'tip', 'var(--color-ink)'),
+  ]
+  return <LaneTimeline lanes={lanes} now={now} interactive={interactive} compact={compact} legend={interactive} />
+}
+
+/**
+ * The shared match-time axis with any set of lanes. Shots in a lane that
+ * would overlap stack upward at the burst's first x; tips never stack.
+ */
+export function LaneTimeline({
+  lanes,
+  now,
+  interactive = false,
+  compact = false,
+  legend = false,
+  labelWidth,
+}: {
+  lanes: Lane[]
+  now?: number
+  interactive?: boolean
+  compact?: boolean
+  legend?: boolean
+  /** Width of the label column, for longer labels like team numbers. */
+  labelWidth?: string
+}) {
   const LANE_H = compact ? COMPACT_LANE_H : FULL_LANE_H
   const [ref, width] = useWidth<HTMLDivElement>()
-  const [active, setActive] = useState<number | null>(null)
-  const nectar = alliance === 'blue' ? 'var(--color-blue)' : 'var(--color-red)'
-  const colorOf = (type: EventType) => {
-    const lane = laneOf(type)
-    return lane === 0 ? nectar : lane === 1 ? 'var(--color-pollen)' : 'var(--color-ink)'
-  }
+  const [active, setActive] = useState<{ lane: number; i: number } | null>(null)
 
   const plotW = Math.max(0, width - PAD_X * 2)
   const x = (t: number) => PAD_X + (Math.min(t, MATCH_MS) / MATCH_MS) * plotW
 
-  // Consecutive shots in the same lane that would overlap on the axis stack
-  // upward at the burst's first x instead of stepping sideways. Tips don't stack.
-  const placed: { x: number; level: number; top: boolean }[] = []
-  const lastInLane: (number | undefined)[] = []
-  const depth = LANES.map(() => 1)
-  events.forEach((e, i) => {
-    const lane = laneOf(e.type)
-    const prev = lastInLane[lane]
-    const px = x(e.t)
-    if (lane !== 2 && prev != null && px - placed[prev].x < STACK_GAP) {
-      placed[prev].top = false
-      placed[i] = { x: placed[prev].x, level: placed[prev].level + 1, top: true }
-      depth[lane] = Math.max(depth[lane], placed[i].level + 1)
-    } else {
-      placed[i] = { x: px, level: 0, top: true }
-    }
-    lastInLane[lane] = i
+  const placed = lanes.map((l) => {
+    const out: { x: number; level: number; top: boolean }[] = []
+    l.events.forEach((e, i) => {
+      const px = x(e.t)
+      const prev = out[i - 1]
+      if (e.type !== 'tip' && i > 0 && l.events[i - 1].type !== 'tip' && px - prev.x < STACK_GAP) {
+        prev.top = false
+        out.push({ x: prev.x, level: prev.level + 1, top: true })
+      } else {
+        out.push({ x: px, level: 0, top: true })
+      }
+    })
+    return out
   })
-  const laneH = depth.map((d) => LANE_H + (d - 1) * STACK_STEP)
+  const laneH = placed.map((p) => LANE_H + Math.max(0, ...p.map((m) => m.level)) * STACK_STEP)
   // Each lane's guide line (and bottom of its stacks) sits LANE_H / 2 above the lane's bottom.
   const baseY = laneH.map((_, i) => laneH.slice(0, i + 1).reduce((a, b) => a + b, 0) - LANE_H / 2)
   const height = laneH.reduce((a, b) => a + b, 0)
-  const activeEvent = active != null ? events[active] : null
+  const activeEvent = active ? lanes[active.lane].events[active.i] : null
+  const total = lanes.reduce((n, l) => n + l.events.length, 0)
 
   return (
     <div className="select-none">
       <div className="flex">
-        <div className={cx('shrink-0 text-ink-3', compact ? 'w-12 text-[10px]' : 'w-14 text-[11px]')}>
-          {LANES.map((l, i) => (
-            <div key={l} style={{ height: laneH[i] }} className="flex items-end">
-              <div style={{ height: LANE_H }} className="flex items-center">
-                {l}
+        <div className={cx('shrink-0 text-ink-3', labelWidth ?? (compact ? 'w-12' : 'w-14'), compact ? 'text-[10px]' : 'text-[11px]')}>
+          {lanes.map((l, i) => (
+            <div key={l.key} style={{ height: laneH[i] }} className="flex items-end">
+              <div style={{ height: LANE_H }} className="flex items-center truncate">
+                {l.label}
               </div>
             </div>
           ))}
         </div>
         <div ref={ref} className="relative min-w-0 flex-1">
           {width > 0 && (
-            <svg width={width} height={height} role="img" aria-label={`Timeline of ${events.length} events`}>
+            <svg width={width} height={height} role="img" aria-label={`Timeline of ${total} events`}>
               {/* auto + transition shading; teleop is plain */}
               <rect x={x(0)} y={0} width={x(AUTO_MS) - x(0)} height={height} fill="var(--color-surface-2)" rx={4} />
               <rect x={x(AUTO_MS)} y={0} width={x(TELEOP_START_MS) - x(AUTO_MS)} height={height} fill="var(--color-line)" opacity={0.5} />
-              {LANES.map((_, i) => (
-                <line key={i} x1={PAD_X} x2={PAD_X + plotW} y1={baseY[i]} y2={baseY[i]} stroke="var(--color-line)" strokeWidth={1} />
+              {lanes.map((l, i) => (
+                <line key={l.key} x1={PAD_X} x2={PAD_X + plotW} y1={baseY[i]} y2={baseY[i]} stroke="var(--color-line)" strokeWidth={1} />
               ))}
               <line x1={x(FLOWER_UNLOCK_MS)} x2={x(FLOWER_UNLOCK_MS)} y1={0} y2={height} stroke="var(--color-ink-3)" strokeDasharray="2 3" strokeWidth={1} />
-              {events.map((e, i) => {
-                const { x: cx, level, top } = placed[i]
-                const cy = baseY[laneOf(e.type)] - level * STACK_STEP
-                const color = colorOf(e.type)
-                const isActive = active === i
-                let mark
-                if (e.type === 'tip') {
-                  mark = <rect x={cx - 2} y={cy - LANE_H / 2 + 1} width={4} height={LANE_H - 2} rx={2} fill={color} stroke="var(--color-bg)" strokeWidth={1} />
-                } else if (e.type.startsWith('flower')) {
-                  mark = <rect x={cx - 4} y={cy - 4} width={8} height={8} transform={`rotate(45 ${cx} ${cy})`} fill={color} stroke="var(--color-bg)" strokeWidth={2} />
-                } else if (e.type.endsWith('miss')) {
-                  mark = <circle cx={cx} cy={cy} r={4} fill="var(--color-bg)" stroke={color} strokeWidth={1.75} />
-                } else {
-                  mark = <circle cx={cx} cy={cy} r={4.5} fill={color} stroke="var(--color-bg)" strokeWidth={2} />
-                }
-                return (
-                  <g key={i} opacity={active != null && !isActive ? 0.5 : 1}>
-                    {mark}
-                    {interactive && (
-                      // Stacked marks split the stack's height so each one stays hoverable.
-                      <rect
-                        x={cx - 11}
-                        y={cy - (top ? 11 : STACK_STEP / 2)}
-                        width={22}
-                        height={(top ? 11 : STACK_STEP / 2) + (level === 0 ? 11 : STACK_STEP / 2)}
-                        fill="transparent"
-                        onPointerEnter={() => setActive(i)}
-                        onPointerLeave={() => setActive(null)}
-                        onClick={() => setActive(isActive ? null : i)}
-                      />
-                    )}
-                  </g>
-                )
-              })}
+              {lanes.map((l, li) =>
+                l.events.map((e, i) => {
+                  const { x: cx, level, top } = placed[li][i]
+                  const cy = baseY[li] - level * STACK_STEP
+                  const isActive = active?.lane === li && active.i === i
+                  return (
+                    <g key={`${l.key}-${i}`} opacity={active != null && !isActive ? 0.5 : 1}>
+                      <Mark type={e.type} x={cx} y={cy} color={e.color} laneH={LANE_H} />
+                      {interactive && (
+                        // Stacked marks split the stack's height so each one stays hoverable.
+                        <rect
+                          x={cx - 11}
+                          y={cy - (top ? 11 : STACK_STEP / 2)}
+                          width={22}
+                          height={(top ? 11 : STACK_STEP / 2) + (level === 0 ? 11 : STACK_STEP / 2)}
+                          fill="transparent"
+                          onPointerEnter={() => setActive({ lane: li, i })}
+                          onPointerLeave={() => setActive(null)}
+                          onClick={() => setActive(isActive ? null : { lane: li, i })}
+                        />
+                      )}
+                    </g>
+                  )
+                }),
+              )}
               {now != null && (
                 <line x1={x(now)} x2={x(now)} y1={0} y2={height} stroke="var(--color-ink)" strokeWidth={2} strokeLinecap="round" />
               )}
             </svg>
           )}
-          {activeEvent && (
+          {activeEvent && active && (
             <div
               className="pointer-events-none absolute -top-9 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg border border-line bg-surface-2 px-2 py-1 text-xs shadow-lg"
-              style={{ left: Math.min(Math.max(placed[active!].x, 60), width - 60) }}
+              style={{ left: Math.min(Math.max(placed[active.lane][active.i].x, 60), width - 60) }}
             >
               <span className="text-ink">{LABELS[activeEvent.type]}</span>
               <span className="tnum text-ink-2"> · {formatElapsed(activeEvent.t)} · {activeEvent.phase === 'auto' ? 'Auto' : 'Teleop'}</span>
@@ -174,7 +197,7 @@ export function Timeline({
           </div>
         </div>
       </div>
-      {interactive && (
+      {legend && (
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-ink-2">
           <LegendItem label="Scored"><circle cx={5} cy={5} r={4} fill="var(--color-ink-2)" /></LegendItem>
           <LegendItem label="Missed"><circle cx={5} cy={5} r={3.5} fill="none" stroke="var(--color-ink-2)" strokeWidth={1.5} /></LegendItem>
@@ -184,6 +207,15 @@ export function Timeline({
       )}
     </div>
   )
+}
+
+function Mark({ type, x, y, color, laneH }: { type: EventType; x: number; y: number; color: string; laneH: number }) {
+  if (type === 'tip') return <rect x={x - 2} y={y - laneH / 2 + 1} width={4} height={laneH - 2} rx={2} fill={color} stroke="var(--color-bg)" strokeWidth={1} />
+  if (type.startsWith('flower')) {
+    return <rect x={x - 4} y={y - 4} width={8} height={8} transform={`rotate(45 ${x} ${y})`} fill={color} stroke="var(--color-bg)" strokeWidth={2} />
+  }
+  if (type.endsWith('miss')) return <circle cx={x} cy={y} r={4} fill="var(--color-bg)" stroke={color} strokeWidth={1.75} />
+  return <circle cx={x} cy={y} r={4.5} fill={color} stroke="var(--color-bg)" strokeWidth={2} />
 }
 
 function LegendItem({ label, children }: { label: string; children: ReactNode }) {

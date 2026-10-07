@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../app/auth'
 import { useData } from '../app/data'
 import { ConflictPanel } from '../components/Conflicts'
+import { AllianceTotals, MatchFlowers, MatchTimeline, StartPositions } from '../components/MatchOverview'
 import { FlowerMap, FlowerSummary } from '../components/Flowers'
 import { StartPositionButton } from '../components/StartPosition'
 import { Timeline } from '../components/Timeline'
@@ -107,8 +108,16 @@ export function MatchDetailPage() {
         ))}
       </div>
 
+      <div className="mb-4 space-y-4">
+        <MatchFlowers group={group} points={points} />
+        <StartPositions group={group} />
+        <MatchTimeline group={group} />
+        <AllianceTotals group={group} points={points} />
+      </div>
+
       <ConflictPanel facts={group.facts} lineupIssues={group.lineupIssues} onResolve={resolve} />
 
+      <h2 className="mb-2 mt-6 text-sm font-medium text-ink-2">Robots</h2>
       {group.reports.length > 1 && (
         <div role="tablist" className="mb-4 flex gap-2 overflow-x-auto">
           {group.reports.map((r) => (
@@ -203,8 +212,8 @@ export function ReportView({ report, tournament }: { report: Report; tournament:
             </div>
           </div>
           {report.pre.start && (
-            <div className="w-28 shrink-0 self-center">
-              <StartPositionButton value={report.pre.start} alliance={report.pre.alliance} />
+            <div className="shrink-0 self-center">
+              <StartPositionButton value={report.pre.start} alliance={report.pre.alliance} compact />
             </div>
           )}
           <div className="text-right" title={ESTIMATE_NOTE}>
