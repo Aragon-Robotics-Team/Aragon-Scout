@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { AUTO_MS, FLOWER_UNLOCK_MS, MATCH_MS, TELEOP_START_MS, formatElapsed } from '../lib/timing'
 import type { Alliance, EventType, MatchEvent } from '../lib/types'
+import { cx } from './ui'
 
 const LANES = ['Nectar', 'Pollen', 'Tip'] as const
-const LANE_H = 22
+const FULL_LANE_H = 22
+/** Lane height for the half-height live timeline. */
+const COMPACT_LANE_H = 12
 const PAD_X = 6
 /** Vertical step between marks stacked in one burst of shots. */
 const STACK_STEP = 8
@@ -48,13 +51,17 @@ export function Timeline({
   alliance,
   now,
   interactive = false,
+  compact = false,
 }: {
   events: MatchEvent[]
   alliance: Alliance | null
   /** Elapsed ms for the live playhead; omit for a finished match. */
   now?: number
   interactive?: boolean
+  /** Half-height lanes, for the live screen. */
+  compact?: boolean
 }) {
+  const LANE_H = compact ? COMPACT_LANE_H : FULL_LANE_H
   const [ref, width] = useWidth<HTMLDivElement>()
   const [active, setActive] = useState<number | null>(null)
   const nectar = alliance === 'blue' ? 'var(--color-blue)' : 'var(--color-red)'
@@ -93,7 +100,7 @@ export function Timeline({
   return (
     <div className="select-none">
       <div className="flex">
-        <div className="w-14 shrink-0 text-[11px] text-ink-3">
+        <div className={cx('shrink-0 text-ink-3', compact ? 'w-12 text-[10px]' : 'w-14 text-[11px]')}>
           {LANES.map((l, i) => (
             <div key={l} style={{ height: laneH[i] }} className="flex items-end">
               <div style={{ height: LANE_H }} className="flex items-center">
@@ -119,7 +126,7 @@ export function Timeline({
                 const isActive = active === i
                 let mark
                 if (e.type === 'tip') {
-                  mark = <rect x={cx - 2} y={cy - 8} width={4} height={16} rx={2} fill={color} stroke="var(--color-bg)" strokeWidth={1} />
+                  mark = <rect x={cx - 2} y={cy - LANE_H / 2 + 1} width={4} height={LANE_H - 2} rx={2} fill={color} stroke="var(--color-bg)" strokeWidth={1} />
                 } else if (e.type.startsWith('flower')) {
                   mark = <rect x={cx - 4} y={cy - 4} width={8} height={8} transform={`rotate(45 ${cx} ${cy})`} fill={color} stroke="var(--color-bg)" strokeWidth={2} />
                 } else if (e.type.endsWith('miss')) {
@@ -160,7 +167,7 @@ export function Timeline({
               <span className="tnum text-ink-2"> · {formatElapsed(activeEvent.t)} · {activeEvent.phase === 'auto' ? 'Auto' : 'Teleop'}</span>
             </div>
           )}
-          <div className="relative mt-1 h-4 text-[10px] text-ink-3">
+          <div className={cx('relative text-[10px] text-ink-3', compact ? 'h-3.5' : 'mt-1 h-4')}>
             <span className="absolute" style={{ left: x(0) }}>Auto</span>
             <span className="absolute" style={{ left: x(TELEOP_START_MS) }}>Teleop</span>
             <span className="absolute -translate-x-1/2" style={{ left: x(FLOWER_UNLOCK_MS) }}>1:00</span>

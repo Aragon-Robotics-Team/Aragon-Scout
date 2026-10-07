@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { matchLabel, matchTypeOf } from '../lib/matches'
-import { FLOWER_UNLOCK_MS, MATCH_MS, clockElapsed, formatClock, matchRemaining, phaseAt, remainingInStage, stageAt, type Clock } from '../lib/timing'
+import { AUTO_MS, MATCH_MS, clockElapsed, formatClock, matchRemaining, phaseAt, remainingInStage, stageAt, type Clock } from '../lib/timing'
 import type { EventType, Report } from '../lib/types'
 import { Timeline } from './Timeline'
 import { ToggleButton } from './ReportForms'
 import { StartPositionButton } from './StartPosition'
 import { Button, cx } from './ui'
+
+/** How long before the end of auto and of teleop Park lights up. */
+const PARK_HINT_MS = 15_000
 
 const STAGE_LABEL = { auto: 'Auto', transition: 'Transition', teleop: 'Teleop', done: 'Done' } as const
 
@@ -91,42 +94,46 @@ export function LiveScoring({
   const nectar = report.pre.alliance === 'blue' ? 'var(--color-blue)' : 'var(--color-red)'
   const pollen = 'var(--color-pollen)'
   const isAuto = stage === 'auto' || stage === 'transition'
-  const flowersOpen = elapsed >= FLOWER_UNLOCK_MS
+  // Robots park at the end of each period, so Park lights up for its last stretch.
+  const parkSoon = running && ((elapsed >= AUTO_MS - PARK_HINT_MS && elapsed < AUTO_MS) || elapsed >= MATCH_MS - PARK_HINT_MS)
   const { toggles } = report
+  const setToggle = (k: keyof typeof toggles, v: boolean) => onChange({ ...report, toggles: { ...toggles, [k]: v } })
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 pb-8 pt-3">
-      <div className="mb-3 flex items-end justify-between">
+    <div className="mx-auto w-full max-w-2xl px-4 pb-6 pt-2">
+      <div className="mb-2 flex items-end justify-between">
         <div>
-          <div className={cx('text-xs font-medium uppercase tracking-[0.12em]', stage === 'transition' || (started && !running) ? 'text-warn' : 'text-ink-2')}>
+          <div className={cx('text-[11px] font-medium uppercase tracking-[0.12em]', stage === 'transition' || (started && !running) ? 'text-warn' : 'text-ink-2')}>
             {!started ? 'Ready' : !running ? `Stopped · ${STAGE_LABEL[stage]}` : STAGE_LABEL[stage]}
           </div>
-          <div className="flex items-baseline gap-2.5">
-            <span className="tnum text-5xl font-semibold leading-none tracking-tight">{formatClock(remainingInStage(elapsed))}</span>
-            <span className="tnum text-xl text-ink-3" title="Match time left">
+          <div className="flex items-baseline gap-2">
+            <span className="tnum text-4xl font-semibold leading-none tracking-tight">{formatClock(remainingInStage(elapsed))}</span>
+            <span className="tnum text-lg text-ink-3" title="Match time left">
               {formatClock(matchRemaining(elapsed))}
             </span>
           </div>
         </div>
-        <div className="min-w-0 text-right text-sm text-ink-2">
-          {tournamentName && <div className="max-w-[12rem] truncate text-xs text-ink-3">{tournamentName}</div>}
-          <div className="tnum">{matchLabel(matchTypeOf(report.pre), report.pre.matchNumber)}</div>
-          <div className="flex items-center justify-end gap-2">
-            {report.pre.start && <StartPositionButton value={report.pre.start} alliance={report.pre.alliance} compact />}
-            <span className="tnum font-medium" style={{ color: nectar }}>
-              {report.pre.teamNumber}
-            </span>
+        <div className="flex min-w-0 items-center gap-2 text-right text-sm text-ink-2">
+          {report.pre.start && <StartPositionButton value={report.pre.start} alliance={report.pre.alliance} compact />}
+          <div className="min-w-0">
+            {tournamentName && <div className="max-w-[10rem] truncate text-[11px] text-ink-3">{tournamentName}</div>}
+            <div className="tnum">
+              {matchLabel(matchTypeOf(report.pre), report.pre.matchNumber)} ·{' '}
+              <span className="font-medium" style={{ color: nectar }}>
+                {report.pre.teamNumber}
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="mb-3 flex gap-2">
+      <div className="mb-2 flex gap-2">
         {!started ? (
           <>
             <Button variant="ghost" onClick={onBack}>
               ← Back
             </Button>
-            <Button variant="primary" className="h-14 flex-1 text-base" onClick={start}>
+            <Button variant="primary" className="h-12 flex-1 text-base" onClick={start}>
               Start
             </Button>
           </>
@@ -148,9 +155,20 @@ export function LiveScoring({
         )}
       </div>
 
-      <div className="mb-4 rounded-2xl border border-line bg-surface px-3 pb-2 pt-3">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="text-xs text-ink-3">
+      {/* Leave and park aren't timed, so they stay usable while stopped. */}
+      <div className={cx('mb-2 grid gap-2', isAuto ? 'grid-cols-2' : 'grid-cols-1', !started && 'pointer-events-none opacity-40')}>
+        {isAuto && <ToggleButton label="Leave" on={toggles.leave} onChange={(v) => setToggle('leave', v)} className="h-11" />}
+        <ParkButton
+          on={isAuto ? toggles.autoPark : toggles.teleopPark}
+          onChange={(v) => setToggle(isAuto ? 'autoPark' : 'teleopPark', v)}
+          label={isAuto ? 'Auto park' : 'Park'}
+          highlight={parkSoon}
+        />
+      </div>
+
+      <div className="mb-2 rounded-2xl border border-line bg-surface px-3 pb-1.5 pt-2">
+        <div className="mb-1 flex items-center justify-between">
+          <span className="text-[11px] text-ink-3">
             {!started ? 'Press Start when the match starts' : !running ? 'Stopped — taps are paused' : stage === 'transition' ? 'Taps still count as auto' : 'Live timeline'}
           </span>
           <button
@@ -162,13 +180,13 @@ export function LiveScoring({
             ↶ Undo
           </button>
         </div>
-        <Timeline events={report.events} alliance={report.pre.alliance} now={elapsed} />
+        <Timeline events={report.events} alliance={report.pre.alliance} now={elapsed} compact />
       </div>
 
       <div className={cx('transition-opacity', !running && 'pointer-events-none opacity-40')} aria-disabled={!running}>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="text-center text-xs font-semibold uppercase tracking-[0.12em] text-ink-2">Nectar</div>
-          <div className="text-center text-xs font-semibold uppercase tracking-[0.12em] text-ink-2">Pollen</div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-2">Nectar</div>
+          <div className="text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-2">Pollen</div>
           <TapButton color={nectar} label="Score" count={count('nectar_score')} onTap={() => tap('nectar_score')} solid />
           <TapButton color={pollen} label="Score" count={count('pollen_score')} onTap={() => tap('pollen_score')} solid />
           <TapButton color={nectar} label="Miss" count={count('nectar_miss')} onTap={() => tap('nectar_miss')} />
@@ -178,31 +196,22 @@ export function LiveScoring({
         <button
           type="button"
           onClick={() => tap('tip')}
-          className="mt-3 flex h-16 w-full items-center justify-between rounded-2xl border border-line bg-surface-2 px-5 text-lg font-medium active:scale-[0.99] active:bg-line"
+          className="mt-2 flex h-14 w-full items-center justify-between rounded-2xl border border-line bg-surface-2 px-5 text-lg font-medium active:scale-[0.99] active:bg-line"
         >
           <span>Hive tip</span>
           <span className="tnum text-ink-2">{count('tip')}</span>
         </button>
-
-        {/* Space is reserved all match so nothing below shifts when flowers unlock at 1:00. */}
-        <div className={cx('mt-3 flex items-center gap-2', !flowersOpen && 'invisible')} aria-hidden={!flowersOpen}>
-          <span className="w-20 shrink-0 text-xs text-ink-3">Into flower</span>
-          <SmallTap color={nectar} label="Nectar" count={count('flower_nectar')} onTap={() => tap('flower_nectar')} />
-          <SmallTap color={pollen} label="Pollen" count={count('flower_pollen')} onTap={() => tap('flower_pollen')} />
-        </div>
       </div>
+    </div>
+  )
+}
 
-      {/* Leave and park aren't timed, so they stay usable while stopped. */}
-      <div className={cx('mt-3 grid gap-3', isAuto ? 'grid-cols-2' : 'grid-cols-1', !started && 'pointer-events-none opacity-40')}>
-        {isAuto ? (
-          <>
-            <ToggleButton label="Leave" on={toggles.leave} onChange={(v) => onChange({ ...report, toggles: { ...toggles, leave: v } })} />
-            <ToggleButton label="Park" on={toggles.autoPark} onChange={(v) => onChange({ ...report, toggles: { ...toggles, autoPark: v } })} />
-          </>
-        ) : (
-          <ToggleButton label="Park" on={toggles.teleopPark} onChange={(v) => onChange({ ...report, toggles: { ...toggles, teleopPark: v } })} />
-        )}
-      </div>
+/** Park, ringed and labeled while it's time to park. */
+function ParkButton({ on, onChange, label, highlight }: { on: boolean; onChange(v: boolean): void; label: string; highlight: boolean }) {
+  return (
+    <div className="relative">
+      <ToggleButton label={highlight && !on ? `${label} now` : label} on={on} onChange={onChange} className={cx('h-11 w-full', highlight && !on && 'border-warn text-warn')} />
+      {highlight && !on && <span aria-hidden className="pointer-events-none absolute inset-0 animate-pulse rounded-xl ring-2 ring-warn" />}
     </div>
   )
 }
@@ -223,20 +232,6 @@ function TapButton({ color, label, count, onTap, solid }: { color: string; label
     >
       <span className="text-xl font-medium">{label}</span>
       <span className="tnum mt-0.5 text-sm text-ink-2">{count}</span>
-    </button>
-  )
-}
-
-function SmallTap({ color, label, count, onTap }: { color: string; label: string; count: number; onTap(): void }) {
-  return (
-    <button
-      type="button"
-      onClick={onTap}
-      style={{ borderColor: `color-mix(in srgb, ${color} 45%, transparent)` }}
-      className="flex h-10 flex-1 items-center justify-between rounded-xl border bg-surface px-3 text-sm active:brightness-125"
-    >
-      <span>{label}</span>
-      <span className="tnum text-ink-2">{count}</span>
     </button>
   )
 }
