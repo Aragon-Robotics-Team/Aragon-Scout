@@ -17,7 +17,7 @@ export function HomePage() {
 
       <Link
         to="/record"
-        className="flex h-16 items-center justify-center gap-3 rounded-2xl bg-ink text-lg font-semibold text-bg transition-colors hover:bg-white"
+        className="flex h-16 items-center justify-center gap-3 rounded-2xl bg-accent text-lg font-semibold text-on-accent transition hover:brightness-110"
       >
         <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden>
           <circle cx="9" cy="9" r="8" fill="none" stroke="currentColor" strokeWidth="1.75" />

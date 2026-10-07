@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 
-/* Dark-only, minimal palette. Game colors: nectar takes its alliance color, pollen is amber. */
+/* Minimal palette, dark by default. Game colors: nectar takes its alliance color, pollen is amber.
+   Light mode and custom themes override these on <html> (see src/lib/theme.ts). */
 @theme {
   --color-bg: #0e0e10;
   --color-surface: #16161a;
@@ -14,12 +15,33 @@
   --color-pollen: #c98500;
   --color-good: #3dbb7a;
   --color-warn: #e0a526;
+  /* Primary buttons and switched-on toggles. */
+  --color-accent: #ededef;
+  --color-on-accent: #0e0e10;
 
   --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 :root {
   color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --color-bg: #f6f6f7;
+  --color-surface: #ffffff;
+  --color-surface-2: #f0f0f2;
+  --color-line: #dedee3;
+  --color-ink: #16161a;
+  --color-ink-2: #55555e;
+  --color-ink-3: #7c7c86;
+  --color-red: #d4282f;
+  --color-blue: #1f66d1;
+  --color-pollen: #a86b00;
+  --color-good: #1f8a55;
+  --color-warn: #a87300;
+  --color-accent: #16161a;
+  --color-on-accent: #ffffff;
 }
 
 html,

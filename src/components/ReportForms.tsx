@@ -209,13 +209,13 @@ export function ToggleButton({
       onClick={() => onChange(!on)}
       className={cx(
         'flex h-12 items-center justify-center gap-2 rounded-xl border text-[15px] font-medium transition-colors',
-        on ? 'border-ink bg-ink text-bg' : 'border-line bg-surface text-ink-2',
+        on ? 'border-accent bg-accent text-on-accent' : 'border-line bg-surface text-ink-2',
         className,
       )}
     >
       <span
         aria-hidden
-        className={cx('flex h-4 w-4 items-center justify-center rounded-full border text-[10px]', on ? 'border-bg' : 'border-ink-3')}
+        className={cx('flex h-4 w-4 items-center justify-center rounded-full border text-[10px]', on ? 'border-on-accent' : 'border-ink-3')}
       >
         {on ? '✓' : ''}
       </span>

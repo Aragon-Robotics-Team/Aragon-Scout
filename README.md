@@ -1,6 +1,6 @@
 # Aragon Scout
 
-Real-time match scouting for the FTC **BIOBUZZ** (2026–27) season. It's a dark-mode, phone-first PWA that works fully offline and syncs to Supabase when a connection returns.
+Real-time match scouting for the FTC **BIOBUZZ** (2026–27) season. It's a phone-first PWA (dark, light, follow-the-phone, or a custom theme from Account → Appearance) that works fully offline and syncs to Supabase when a connection returns.
 
 - **One account per team.** Every scout signs in with it, and many devices can record at once.
 - **Recording flow:** pre-match info and **Confirm**, then **Start** when the match starts: **Auto 0:30**, an **8s transition** (taps still count as auto), and **Teleop 2:00**. The period clock shows the 2:30 match clock beside it. **Stop**/**Start** pauses the clock mid-match, and **End match** finishes early. After that come the post-match fields and Submit. A recording that ended early or was stopped is labeled **incomplete**; it counts toward accuracy but not toward averages.

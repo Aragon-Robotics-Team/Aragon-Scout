@@ -3,6 +3,7 @@ import { useAuth } from '../app/auth'
 import { useData } from '../app/data'
 import { syncLabel } from '../components/Layout'
 import { ToggleButton } from '../components/ReportForms'
+import { AppearanceCard } from '../components/Appearance'
 import { Button, Card, Page, TextInput, cx } from '../components/ui'
 
 export function AccountPage() {
@@ -104,6 +105,8 @@ export function AccountPage() {
           )}
         </Card>
       )}
+
+      <AppearanceCard />
 
       {error && <p className="mt-3 text-sm text-red">{error}</p>}
 
