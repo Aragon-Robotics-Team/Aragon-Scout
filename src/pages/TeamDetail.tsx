@@ -4,6 +4,7 @@ import { useData } from '../app/data'
 import { PerMatchChart } from '../components/PerMatchChart'
 import { Card, Empty, IncompleteBadge, Page, Segmented, Stat } from '../components/ui'
 import { summarizeTeams } from '../lib/grouping'
+import { latestOpr, savedOfficial, tournamentOpr } from '../lib/opr'
 import { matchLabel, matchPath, matchTypeOf } from '../lib/matches'
 import { ESTIMATE_NOTE, average, formatNum, formatPct, thresholdsFor } from '../lib/scoring'
 
@@ -21,6 +22,11 @@ export function TeamDetailPage() {
     const inScope = reports.filter((r) => r.pre.teamNumber === teamNumber && (!tournament || r.tournamentId === tournament.id))
     return summarizeTeams(inScope, tournaments, reports)[0]
   }, [reports, tournaments, teamNumber, tournament])
+
+  const opr = useMemo(
+    () => (tournament ? tournamentOpr(tournament, reports, tournaments, savedOfficial(tournament.id)).opr : latestOpr(reports, tournaments)).get(teamNumber),
+    [reports, tournaments, tournament, teamNumber],
+  )
 
   const setScope = (s: 'tournament' | 'all') => {
     if (!tid) return
@@ -67,6 +73,7 @@ export function TeamDetailPage() {
     <Page>
       {header}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Stat label="OPR" value={opr != null ? formatNum(opr) : '—'} sub={tournament ? 'this tournament' : 'latest tournament'} />
         <Stat label="Est. robot pts*" value={formatNum(summary.avgEstPoints)} sub="avg per match" />
         <Stat label="Alliance tips*" value={formatNum(summary.avgTips)} sub={`avg in their matches · RP at ${thresholds.pollinator1Tips} & ${thresholds.pollinator2Tips}`} />
         <Stat label="Nectar accuracy" value={formatPct(summary.nectarAccuracy)} sub={`${st.reduce((n, s) => n + s.total.nectarScored, 0)} scored`} />
