@@ -199,6 +199,15 @@ export function ReportView({ report, tournament }: { report: Report; tournament:
 
   return (
     <div className="space-y-4">
+      {!readOnly && (
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button onClick={() => navigate(`/reports/${report.id}/edit`)}>Edit</Button>
+          <Button onClick={exportOne}>Export JSON</Button>
+          <Button variant="danger" onClick={remove}>
+            Delete
+          </Button>
+        </div>
+      )}
       <Card className="p-4">
         <div className="flex items-baseline justify-between gap-3">
           <div className="min-w-0">
@@ -302,15 +311,6 @@ export function ReportView({ report, tournament }: { report: Report; tournament:
         {post.strategyNotes && <p className="mt-3 whitespace-pre-wrap border-t border-line pt-3 text-sm text-ink-2">{post.strategyNotes}</p>}
       </Card>
 
-      {!readOnly && (
-        <div className="flex flex-wrap gap-2 pt-2">
-          <Button onClick={() => navigate(`/reports/${report.id}/edit`)}>Edit</Button>
-          <Button onClick={exportOne}>Export JSON</Button>
-          <Button variant="danger" className="ml-auto" onClick={remove}>
-            Delete
-          </Button>
-        </div>
-      )}
     </div>
   )
 }
