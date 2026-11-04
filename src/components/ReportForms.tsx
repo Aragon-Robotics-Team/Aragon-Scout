@@ -104,7 +104,7 @@ export function PreMatchForm({
       </div>
       <div>
         <Label hint="optional">Other teams in this match</Label>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="space-y-3">
           <TeamNumberField label={`${own} partner`} value={value.partnerTeam} teams={teams} nameOf={nameOf} onChange={(v) => set('partnerTeam', v)} />
           <TeamNumberField
             label={`${other} 1`}
@@ -119,7 +119,6 @@ export function PreMatchForm({
             teams={teams}
             nameOf={nameOf}
             onChange={(v) => set('opponentTeams', [value.opponentTeams[0], v])}
-            alignRight
           />
         </div>
         {differs && !blank && (
@@ -133,7 +132,7 @@ export function PreMatchForm({
           </button>
         )}
       </div>
-      <TextArea label="Notes" value={value.notes} onChange={(e) => set('notes', e.target.value)} rows={3} />
+      <TextArea label="Notes" value={value.notes} onChange={(e) => set('notes', e.target.value)} rows={2} />
     </div>
   )
 }
