@@ -300,15 +300,17 @@ export function IncompleteToggle({ report, onChange }: { report: Report; onChang
     <div className="mt-5">
       <ToggleButton
         tone="inverted"
-        label="Incomplete recording"
+        label="Incomplete recording?"
         on={!!report.incomplete}
         onChange={(v) => onChange({ ...report, incomplete: v })}
         className="w-full"
       />
-      <p className="mt-1.5 text-xs text-ink-3">
-        Incomplete recordings still count toward accuracy, but not toward totals and averages.
-        {report.paused && ' The clock was stopped during this match.'}
+      <p className="mt-2 text-sm leading-snug text-ink-2">
+        Check this box if you did not finish scouting the entire match. For example, if you completely missed a section of a match or you forgot to
+        fill in auto, check this box. If you might have made some small mistakes like missing a ball but still completed the match, don’t check this
+        box.
       </p>
+      {report.paused && <p className="mt-1 text-xs text-ink-3">The clock was stopped during this match.</p>}
     </div>
   )
 }
