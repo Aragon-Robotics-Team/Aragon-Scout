@@ -172,11 +172,12 @@ export function FlowerInput({
       </div>
       <ul className="mt-2 space-y-0.5 text-[11px]">
         {value.map((s, i) => (
-          <li key={i} className={cx('truncate', i === selected && 'text-ink')}>
-            <button type="button" onClick={() => setSelected(i)} className="truncate text-left">
+          <li key={i} className={cx('flex items-baseline gap-2', i === selected && 'text-ink')}>
+            <button type="button" onClick={() => setSelected(i)} className="min-w-0 truncate text-left">
               <span className="text-ink-3">{FLOWER_NAMES[i]}: </span>
               <FlowerSummary stack={s} points={points} />
             </button>
+            {i === selected && <span className="ml-auto shrink-0 font-medium text-ink">editing flower</span>}
           </li>
         ))}
       </ul>
