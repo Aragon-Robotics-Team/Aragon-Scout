@@ -54,6 +54,7 @@ export function AppearanceCard() {
       )}
       {!localMode && (
         <ToggleButton
+          tone="neutral"
           className="mt-4 w-full"
           label="Different theme on this device"
           on={deviceOnly}

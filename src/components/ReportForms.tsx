@@ -190,34 +190,42 @@ export function PostMatchForm({
   )
 }
 
+/**
+ * How a toggle colors its states, so off is as easy to read as on on any screen:
+ * - `status`: off is red ✗, on is green ✓ (leave, park).
+ * - `inverted`: on is the bad state, so on is red ✓ and off is green ✗ (incomplete recording).
+ * - `neutral`: neither state is bad; off is a high-contrast outline, on is the accent ✓ (settings).
+ */
+type ToggleTone = 'status' | 'inverted' | 'neutral'
+
+const GOOD = 'border-good bg-good/15 text-ink'
+const BAD = 'border-red bg-red/12 text-ink'
+
 export function ToggleButton({
   label,
   on,
   onChange,
   className,
+  tone = 'status',
 }: {
   label: string
   on: boolean
   onChange(v: boolean): void
   className?: string
+  tone?: ToggleTone
 }) {
+  const look = tone === 'neutral' ? (on ? 'border-accent bg-accent text-on-accent' : 'border-ink-3 bg-surface-2 text-ink') : on === (tone === 'status') ? GOOD : BAD
+  const dot = tone === 'neutral' ? (on ? 'bg-on-accent text-accent' : 'border-2 border-ink-2') : on === (tone === 'status') ? 'bg-good text-white' : 'bg-red text-white'
   return (
     <button
       type="button"
       role="switch"
       aria-checked={on}
       onClick={() => onChange(!on)}
-      className={cx(
-        'flex h-12 items-center justify-center gap-2 rounded-xl border text-[15px] font-medium transition-colors',
-        on ? 'border-accent bg-accent text-on-accent' : 'border-line bg-surface text-ink-2',
-        className,
-      )}
+      className={cx('flex h-12 items-center justify-center gap-2 rounded-xl border-2 text-[15px] font-medium transition-colors', look, className)}
     >
-      <span
-        aria-hidden
-        className={cx('flex h-4 w-4 items-center justify-center rounded-full border text-[10px]', on ? 'border-on-accent' : 'border-ink-3')}
-      >
-        {on ? '✓' : ''}
+      <span aria-hidden className={cx('flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold', dot)}>
+        {on ? '✓' : tone === 'neutral' ? '' : '✗'}
       </span>
       {label}
     </button>
@@ -291,6 +299,7 @@ export function IncompleteToggle({ report, onChange }: { report: Report; onChang
   return (
     <div className="mt-5">
       <ToggleButton
+        tone="inverted"
         label="Incomplete recording"
         on={!!report.incomplete}
         onChange={(v) => onChange({ ...report, incomplete: v })}

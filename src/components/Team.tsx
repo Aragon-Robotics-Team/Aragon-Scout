@@ -163,6 +163,7 @@ export function TeamCard({ org }: { org: Org }) {
           <h2 className="font-medium">Public sharing</h2>
           <p className="mt-1 text-sm text-ink-2">Anyone with the link can view your matches and analysis. Only your team can ever add or edit data.</p>
           <ToggleButton
+            tone="neutral"
             className="mt-3 w-full"
             label={org.isPublic ? 'Shared publicly' : 'Private'}
             on={org.isPublic}
