@@ -191,11 +191,10 @@ export function PostMatchForm({
 
 /**
  * How a toggle colors its states, so off is as easy to read as on on any screen:
- * - `status`: off is red ✗, on is green ✓ (leave, park).
- * - `inverted`: on is the bad state, so on is red ✓ and off is green ✗ (incomplete recording).
+ * - `status`: off is red ✗, on is green ✓ (leave, park, complete recording).
  * - `neutral`: neither state is bad; off is a high-contrast outline, on is the accent ✓ (settings).
  */
-type ToggleTone = 'status' | 'inverted' | 'neutral'
+type ToggleTone = 'status' | 'neutral'
 
 const GOOD = 'border-good bg-good/15 text-ink'
 const BAD = 'border-red bg-red/12 text-ink'
@@ -298,16 +297,15 @@ export function IncompleteToggle({ report, onChange }: { report: Report; onChang
   return (
     <div className="mt-5">
       <ToggleButton
-        tone="inverted"
-        label="Incomplete recording?"
-        on={!!report.incomplete}
-        onChange={(v) => onChange({ ...report, incomplete: v })}
+        label={report.incomplete ? 'incomplete recording' : 'complete recording'}
+        on={!report.incomplete}
+        onChange={(complete) => onChange({ ...report, incomplete: !complete })}
         className="w-full"
       />
       <p className="mt-2 text-sm leading-snug text-ink-2">
-        Check this box if you did not finish scouting the entire match. For example, if you completely missed a section of a match or you forgot to
-        fill in auto, check this box. If you might have made some small mistakes like missing a ball but still completed the match, don’t check this
-        box.
+        Tap to switch to incomplete recording if you did not finish scouting the entire match. For example, if you completely missed a section of a
+        match or you forgot to fill in auto, mark it incomplete. If you might have made some small mistakes like missing a ball but still completed
+        the match, leave it as complete recording.
       </p>
       {report.paused && <p className="mt-1 text-xs text-ink-3">The clock was stopped during this match.</p>}
     </div>
