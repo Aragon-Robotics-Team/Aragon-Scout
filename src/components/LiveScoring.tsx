@@ -192,7 +192,7 @@ export function LiveScoring({
         <ParkButton
           on={isAuto ? toggles.autoPark : toggles.teleopPark}
           onChange={(v) => setToggle(isAuto ? 'autoPark' : 'teleopPark', v)}
-          label={isAuto ? 'Auto park' : 'Park'}
+          label={isAuto ? 'Parked (auto)' : 'Parked (teleop)'}
           highlight={parkSoon}
         />
       </div>
@@ -228,11 +228,11 @@ export function LiveScoring({
   )
 }
 
-/** Park, ringed and labeled while it's time to park. */
+/** Park, pulsing while it's time to park. */
 function ParkButton({ on, onChange, label, highlight }: { on: boolean; onChange(v: boolean): void; label: string; highlight: boolean }) {
   return (
     <div className="relative">
-      <ToggleButton label={highlight && !on ? `${label} now` : label} on={on} onChange={onChange} className={cx('h-11 w-full', highlight && !on && 'border-warn text-warn')} />
+      <ToggleButton label={label} on={on} onChange={onChange} className="h-11 w-full" />
       {highlight && !on && <span aria-hidden className="pointer-events-none absolute inset-0 animate-pulse rounded-xl ring-2 ring-warn" />}
     </div>
   )

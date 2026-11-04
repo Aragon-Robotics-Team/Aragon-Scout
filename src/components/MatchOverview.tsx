@@ -143,7 +143,7 @@ export function AllianceTotals({ group, points }: { group: MatchGroup; points: P
     ['Robots scouted', (c) => c.scouted],
     ['Hive tips', (c) => c.tips],
     ['Leave', (c) => c.leave],
-    ['Teleop park', (c) => c.park],
+    ['Parked (teleop)', (c) => c.park],
     ['Shot accuracy', (c) => c.accuracy],
     ['Est. total*', (c) => c.estimate ?? '—'],
   ]

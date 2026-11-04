@@ -79,8 +79,8 @@ export function TeamDetailPage() {
         <Stat label="Nectar accuracy" value={formatPct(summary.nectarAccuracy)} sub={`${st.reduce((n, s) => n + s.total.nectarScored, 0)} scored`} />
         <Stat label="Pollen accuracy" value={formatPct(summary.pollenAccuracy)} sub={`${st.reduce((n, s) => n + s.total.pollenScored, 0)} scored`} />
         <Stat label="Leave" value={formatPct(summary.leaveRate)} sub="of matches" />
-        <Stat label="Auto park" value={formatPct(summary.autoParkRate)} sub="of matches" />
-        <Stat label="Teleop park" value={formatPct(summary.teleopParkRate)} sub="of matches" />
+        <Stat label="Parked (auto)" value={formatPct(summary.autoParkRate)} sub="of matches" />
+        <Stat label="Parked (teleop)" value={formatPct(summary.teleopParkRate)} sub="of matches" />
         <Stat label="Leave + park" value={formatNum(summary.avgSwarmPoints)} sub={`avg pts · Swarm RP at ${thresholds.swarmPoints}`} />
       </div>
       <p className="mt-2 text-[11px] text-ink-3">* {ESTIMATE_NOTE}</p>

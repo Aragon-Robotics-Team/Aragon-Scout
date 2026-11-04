@@ -236,8 +236,8 @@ export function TogglesForm({ value, onChange }: { value: Toggles; onChange(v: T
   return (
     <div className="grid grid-cols-3 gap-2">
       <ToggleButton label="Leave" on={value.leave} onChange={(v) => onChange({ ...value, leave: v })} />
-      <ToggleButton label="Auto park" on={value.autoPark} onChange={(v) => onChange({ ...value, autoPark: v })} />
-      <ToggleButton label="Teleop park" on={value.teleopPark} onChange={(v) => onChange({ ...value, teleopPark: v })} />
+      <ToggleButton label="Parked (auto)" on={value.autoPark} onChange={(v) => onChange({ ...value, autoPark: v })} />
+      <ToggleButton label="Parked (teleop)" on={value.teleopPark} onChange={(v) => onChange({ ...value, teleopPark: v })} />
     </div>
   )
 }

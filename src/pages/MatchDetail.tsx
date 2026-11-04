@@ -257,8 +257,8 @@ export function ReportView({ report, tournament }: { report: Report; tournament:
         <div className="mt-3 flex flex-wrap gap-2 text-sm">
           {[
             ['Leave', s.leave],
-            ['Auto park', s.autoPark],
-            ['Teleop park', s.teleopPark],
+            ['Parked (auto)', s.autoPark],
+            ['Parked (teleop)', s.teleopPark],
           ].map(([label, on]) => (
             <span key={label as string} className={cx('rounded-full border px-3 py-1', on ? 'border-ink-3 text-ink' : 'border-line text-ink-3 line-through')}>
               {label}

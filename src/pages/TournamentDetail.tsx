@@ -12,8 +12,8 @@ import type { PointValues, RpThresholds, ScheduledMatch, Tournament, TournamentT
 
 const POINT_LABELS: [keyof PointValues, string][] = [
   ['leave', 'Leave'],
-  ['autoPark', 'Auto park'],
-  ['teleopPark', 'Teleop park'],
+  ['autoPark', 'Parked (auto)'],
+  ['teleopPark', 'Parked (teleop)'],
   ['autoTip', 'Auto hive tip'],
   ['teleopTip', 'Teleop hive tip'],
   ['cellBall', 'Ball left in cell'],
