@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { matchLabel, matchTypeOf } from '../lib/matches'
-import { AUTO_MS, MATCH_MS, clockElapsed, formatClock, matchRemaining, phaseAt, remainingInStage, stageAt, type Clock } from '../lib/timing'
+import { AUTO_MS, MATCH_MS, TELEOP_START_MS, clockElapsed, formatClock, matchRemaining, phaseAt, remainingInStage, stageAt, type Clock } from '../lib/timing'
 import type { EventType, Report } from '../lib/types'
 import { Timeline } from './Timeline'
 import { ToggleButton } from './ReportForms'
@@ -76,6 +76,13 @@ export function LiveScoring({
     if (!report.paused) onChange({ ...report, paused: true })
   }
   const resume = () => onClock({ ...clock, pausedAt: null, pausedMs: clock.pausedMs + (Date.now() - clock.pausedAt!) })
+  // Nudging lines the clock up with the field's, so unlike stopping it doesn't mark the recording paused.
+  // Moving startedAt shifts elapsed time without touching taps already recorded.
+  const shift = (ms: number) => {
+    const by = Math.max(ms, -clockElapsed(clock, Date.now()))
+    onClock({ ...clock, startedAt: clock.startedAt! - by })
+  }
+  const skip = () => shift(TELEOP_START_MS - clockElapsed(clock, Date.now()))
   const end = () => {
     if (!confirm('End the recording now? It will be saved as incomplete.')) return
     doneRef.current = true
@@ -104,7 +111,7 @@ export function LiveScoring({
       <div className="mb-2 flex items-end justify-between">
         <div>
           <div className={cx('text-[11px] font-medium uppercase tracking-[0.12em]', stage === 'transition' || (started && !running) ? 'text-warn' : 'text-ink-2')}>
-            {!started ? 'Ready' : !running ? `Stopped · ${STAGE_LABEL[stage]}` : STAGE_LABEL[stage]}
+            {!started ? 'Ready' : !running ? `Paused · ${STAGE_LABEL[stage]}` : STAGE_LABEL[stage]}
           </div>
           <div className="flex items-baseline gap-2">
             <span className="tnum text-4xl font-semibold leading-none tracking-tight">{formatClock(remainingInStage(elapsed))}</span>
@@ -139,18 +146,30 @@ export function LiveScoring({
           </>
         ) : (
           <>
-            {running ? (
-              <Button className="flex-1" onClick={stop}>
-                Stop
+            <div className="flex h-11 min-w-0 flex-1 overflow-hidden rounded-xl border border-line bg-surface-2 text-sm font-medium">
+              <button type="button" onClick={() => shift(-1000)} aria-label="Back 1 second" className="flex-[2] border-r border-line active:bg-line">
+                ⏪ 1s
+              </button>
+              <button
+                type="button"
+                onClick={running ? stop : resume}
+                className={cx('flex-[3] border-r border-line', running ? 'active:bg-line' : 'bg-accent text-on-accent')}
+              >
+                {running ? '❚❚ Pause' : '▶ Play'}
+              </button>
+              <button type="button" onClick={() => shift(1000)} aria-label="Forward 1 second" className="flex-[4] active:bg-line">
+                1s ⏩
+              </button>
+            </div>
+            {stage === 'teleop' ? (
+              <Button variant="ghost" className="px-3" onClick={end}>
+                End match
               </Button>
             ) : (
-              <Button variant="primary" className="flex-1" onClick={resume}>
-                Start
+              <Button variant="ghost" className="px-3" onClick={skip}>
+                Skip period
               </Button>
             )}
-            <Button variant="ghost" onClick={end}>
-              End match
-            </Button>
           </>
         )}
       </div>
@@ -169,7 +188,7 @@ export function LiveScoring({
       <div className="mb-2 rounded-2xl border border-line bg-surface px-3 pb-1.5 pt-2">
         <div className="mb-1 flex items-center justify-between">
           <span className="text-[11px] text-ink-3">
-            {!started ? 'Press Start when the match starts' : !running ? 'Stopped — taps are paused' : stage === 'transition' ? 'Taps still count as auto' : 'Live timeline'}
+            {!started ? 'Press Start when the match starts' : !running ? 'Paused — taps are paused' :stage === 'transition' ? 'Taps still count as auto' : 'Live timeline'}
           </span>
           <button
             type="button"
