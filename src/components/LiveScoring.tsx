@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { matchLabel, matchTypeOf } from '../lib/matches'
 import { AUTO_MS, MATCH_MS, TELEOP_START_MS, clockElapsed, formatClock, matchRemaining, phaseAt, remainingInStage, stageAt, type Clock } from '../lib/timing'
 import type { EventType, Report } from '../lib/types'
@@ -9,6 +9,10 @@ import { Button, cx } from './ui'
 
 /** How long before the end of auto and of teleop Park lights up. */
 const PARK_HINT_MS = 15_000
+
+/** A ball type's − takes back its last entry, make or miss. */
+const NECTAR: EventType[] = ['nectar_score', 'nectar_miss']
+const POLLEN: EventType[] = ['pollen_score', 'pollen_miss']
 
 const STAGE_LABEL = { auto: 'Auto', transition: 'Transition', teleop: 'Teleop', done: 'Done' } as const
 
@@ -89,14 +93,22 @@ export function LiveScoring({
     onDone(clockElapsed(clock, Date.now()))
   }
 
+  // Taps still land while paused (at the stopped time) so a scout can catch up or fix mistakes.
   const tap = (type: EventType) => {
-    if (!running) return
+    if (!started) return
     const t = clockElapsed(clock, Date.now())
     navigator.vibrate?.(8)
     onChange({ ...report, events: [...report.events, { t, type, phase: phaseAt(t) }] })
   }
-  const undo = () => onChange({ ...report, events: report.events.slice(0, -1) })
+  /** Removes the most recently entered of these event types; a double buzz tells it apart from a tap. */
+  const remove = (types: EventType[]) => {
+    const i = report.events.findLastIndex((e) => types.includes(e.type))
+    if (i < 0) return
+    navigator.vibrate?.([6, 50, 6])
+    onChange({ ...report, events: report.events.toSpliced(i, 1) })
+  }
   const count = (type: EventType) => report.events.filter((e) => e.type === type).length
+  const has = (types: EventType[]) => report.events.some((e) => types.includes(e.type))
 
   const nectar = report.pre.alliance === 'blue' ? 'var(--color-blue)' : 'var(--color-red)'
   const pollen = 'var(--color-pollen)'
@@ -188,38 +200,29 @@ export function LiveScoring({
       <div className="mb-2 rounded-2xl border border-line bg-surface px-3 pb-1.5 pt-2">
         <div className="mb-1 flex items-center justify-between">
           <span className="text-[11px] text-ink-3">
-            {!started ? 'Press Start when the match starts' : !running ? 'Paused — taps are paused' :stage === 'transition' ? 'Taps still count as auto' : 'Live timeline'}
+            {!started ? 'Press Start when the match starts' : !running ? 'Paused — taps still count, at this time' : stage === 'transition' ? 'Taps still count as auto' : 'Live timeline'}
           </span>
-          <button
-            type="button"
-            onClick={undo}
-            disabled={report.events.length === 0}
-            className="rounded-md px-2 py-0.5 text-xs text-ink-2 hover:text-ink disabled:opacity-30"
-          >
-            ↶ Undo
-          </button>
         </div>
         <Timeline events={report.events} alliance={report.pre.alliance} now={elapsed} compact />
       </div>
 
-      <div className={cx('transition-opacity', !running && 'pointer-events-none opacity-40')} aria-disabled={!running}>
+      <div className={cx('transition-opacity', !started && 'pointer-events-none opacity-40')} aria-disabled={!started}>
         <div className="grid grid-cols-2 gap-2">
           <div className="text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-2">Nectar</div>
           <div className="text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-2">Pollen</div>
-          <TapButton color={nectar} label="Score" count={count('nectar_score')} onTap={() => tap('nectar_score')} solid />
-          <TapButton color={pollen} label="Score" count={count('pollen_score')} onTap={() => tap('pollen_score')} solid />
+          <ScoreButton color={nectar} count={count('nectar_score')} canRemove={has(NECTAR)} onScore={() => tap('nectar_score')} onRemove={() => remove(NECTAR)} />
+          <ScoreButton color={pollen} count={count('pollen_score')} canRemove={has(POLLEN)} onScore={() => tap('pollen_score')} onRemove={() => remove(POLLEN)} />
           <TapButton color={nectar} label="Miss" count={count('nectar_miss')} onTap={() => tap('nectar_miss')} />
           <TapButton color={pollen} label="Miss" count={count('pollen_miss')} onTap={() => tap('pollen_miss')} />
         </div>
 
-        <button
-          type="button"
-          onClick={() => tap('tip')}
-          className="mt-2 flex h-14 w-full items-center justify-between rounded-2xl border border-line bg-surface-2 px-5 text-lg font-medium active:scale-[0.99] active:bg-line"
-        >
-          <span>Hive tip</span>
-          <span className="tnum text-ink-2">{count('tip')}</span>
-        </button>
+        <div className="mt-2 flex h-14 overflow-hidden rounded-2xl border border-line bg-surface-2 text-lg font-medium">
+          <MinusButton onClick={() => remove(['tip'])} disabled={!has(['tip'])} label="Remove last hive tip" />
+          <button type="button" onClick={() => tap('tip')} className="flex flex-1 items-center justify-between px-5 active:bg-line">
+            <span>+ Hive tip</span>
+            <span className="tnum text-ink-2">{count('tip')}</span>
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -235,19 +238,44 @@ function ParkButton({ on, onChange, label, highlight }: { on: boolean; onChange(
   )
 }
 
-function TapButton({ color, label, count, onTap, solid }: { color: string; label: string; count: number; onTap(): void; solid?: boolean }) {
-  const style: CSSProperties = solid
-    ? { background: `color-mix(in srgb, ${color} 24%, var(--color-surface))`, borderColor: `color-mix(in srgb, ${color} 55%, transparent)` }
-    : { background: 'var(--color-surface)', borderColor: `color-mix(in srgb, ${color} 35%, transparent)` }
+/** Score with a − beside it. */
+function ScoreButton({ color, count, canRemove, onScore, onRemove }: { color: string; count: number; canRemove: boolean; onScore(): void; onRemove(): void }) {
+  return (
+    <div
+      className="flex h-28 overflow-hidden rounded-2xl border"
+      style={{ background: `color-mix(in srgb, ${color} 24%, var(--color-surface))`, borderColor: `color-mix(in srgb, ${color} 55%, transparent)` }}
+    >
+      <MinusButton onClick={onRemove} disabled={!canRemove} label="Remove last entry" />
+      <button type="button" onClick={onScore} className="flex flex-1 flex-col items-center justify-center transition-transform active:scale-[0.97] active:brightness-125">
+        <span className="text-xl font-medium">+ Score</span>
+        <span className="tnum mt-0.5 text-sm text-ink-2">{count}</span>
+      </button>
+    </div>
+  )
+}
+
+/** The thumb-sized, muted left half of a split button. */
+function MinusButton({ onClick, disabled, label }: { onClick(): void; disabled: boolean; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      className="w-16 shrink-0 border-r border-line bg-surface text-2xl font-medium text-ink-2 active:bg-line disabled:opacity-30"
+    >
+      −
+    </button>
+  )
+}
+
+function TapButton({ color, label, count, onTap }: { color: string; label: string; count: number; onTap(): void }) {
   return (
     <button
       type="button"
       onClick={onTap}
-      style={style}
-      className={cx(
-        'relative flex flex-col items-center justify-center rounded-2xl border transition-transform active:scale-[0.97] active:brightness-125',
-        solid ? 'h-28' : 'h-20',
-      )}
+      style={{ background: 'var(--color-surface)', borderColor: `color-mix(in srgb, ${color} 35%, transparent)` }}
+      className="relative flex h-20 flex-col items-center justify-center rounded-2xl border transition-transform active:scale-[0.97] active:brightness-125"
     >
       <span className="text-xl font-medium">{label}</span>
       <span className="tnum mt-0.5 text-sm text-ink-2">{count}</span>
