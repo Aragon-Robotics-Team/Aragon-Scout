@@ -7,7 +7,7 @@ import { buildExport, downloadJson, parseImport, slug } from '../lib/exportData'
 
 export function DataPage() {
   const { account } = useAuth()
-  const { reports, tournaments, currentTournamentId } = useData()
+  const { reports, tournaments, pitReports, currentTournamentId } = useData()
   const db = useDb()
   const fileRef = useRef<HTMLInputElement>(null)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
@@ -15,12 +15,17 @@ export function DataPage() {
   const current = tournaments.find((t) => t.id === currentTournamentId)
   const today = () => new Date().toISOString().slice(0, 10)
 
-  const exportAll = () => downloadJson(`aragon-scout-${team}-all-${today()}.json`, buildExport(reports, tournaments, team))
+  const exportAll = () => downloadJson(`aragon-scout-${team}-all-${today()}.json`, buildExport(reports, tournaments, team, pitReports))
   const exportCurrent = () =>
     current &&
     downloadJson(
       `aragon-scout-${team}-${slug(current.name)}-${today()}.json`,
-      buildExport(reports.filter((r) => r.tournamentId === current.id), [current], team),
+      buildExport(
+        reports.filter((r) => r.tournamentId === current.id),
+        [current],
+        team,
+        pitReports.filter((r) => r.tournamentId === current.id),
+      ),
     )
 
   const importFile = async (file: File) => {
@@ -29,7 +34,8 @@ export function DataPage() {
       const data = parseImport(await file.text())
       let added = 0
       let updated = 0
-      await db.transaction('rw', db.reports, db.tournaments, async () => {
+      let pit = 0
+      await db.transaction('rw', db.reports, db.tournaments, db.pitReports, async () => {
         for (const t of data.tournaments) {
           const local = await db.tournaments.get(t.id)
           if (!local || t.updatedAt > local.doc.updatedAt) await db.tournaments.put({ id: t.id, dirty: 1, doc: t })
@@ -41,10 +47,16 @@ export function DataPage() {
           else continue
           await db.reports.put({ id: r.id, dirty: 1, doc: r })
         }
+        for (const p of data.pitReports) {
+          const local = await db.pitReports.get(p.id)
+          if (local && p.updatedAt <= local.doc.updatedAt) continue
+          await db.pitReports.put({ id: p.id, dirty: 1, doc: p })
+          pit++
+        }
       })
       notifyLocalChange()
       const from = data.scoutingTeam != null && data.scoutingTeam !== team ? ` (recorded by team ${data.scoutingTeam})` : ''
-      setMessage({ ok: true, text: `Imported ${added} new and ${updated} updated recording${added + updated === 1 ? '' : 's'}${from}.` })
+      setMessage({ ok: true, text: `Imported ${added} new and ${updated} updated recording${added + updated === 1 ? '' : 's'}${pit ? ` and ${pit} pit report${pit === 1 ? '' : 's'}` : ''}${from}.` })
     } catch (err) {
       setMessage({ ok: false, text: err instanceof Error ? err.message : String(err) })
     } finally {
@@ -57,14 +69,14 @@ export function DataPage() {
       <Card className="p-4">
         <h2 className="font-medium">Export</h2>
         <p className="mt-1 text-sm text-ink-2">
-          Download recordings as JSON — raw events plus computed stats — for use offline or in a spreadsheet. Single matches can be
+          Download recordings and pit scouting as JSON — raw events plus computed stats — for use offline or in a spreadsheet. Single matches can be
           exported from their detail page.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Button onClick={exportCurrent} disabled={!current}>
             {current ? `Export ${current.name}` : 'Export tournament'}
           </Button>
-          <Button onClick={exportAll} disabled={reports.length === 0}>
+          <Button onClick={exportAll} disabled={reports.length === 0 && pitReports.length === 0}>
             Export everything
           </Button>
         </div>
@@ -73,7 +85,7 @@ export function DataPage() {
       <Card className="mt-4 p-4">
         <h2 className="font-medium">Import</h2>
         <p className="mt-1 text-sm text-ink-2">
-          Load an Aragon Scout export — e.g. from a device that recorded without a connection. Recordings are merged; newer edits win.
+          Load an Aragon Scout export — e.g. from a device that recorded without a connection. Recordings and pit reports are merged; newer edits win.
         </p>
         <input
           ref={fileRef}

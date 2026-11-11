@@ -384,15 +384,33 @@ create table if not exists public.reports (
 create index if not exists reports_org_sync on public.reports (org_id, server_updated_at);
 create index if not exists reports_tournament on public.reports (tournament_id, match_number);
 
+-- Pre-match / pit scouting: one per team per tournament (the id is derived from both on the device).
+-- Never readable through public sharing.
+create table if not exists public.pit_reports (
+  id                uuid primary key,
+  org_id            uuid not null references public.organizations (id) on delete cascade,
+  tournament_id     uuid,
+  team_number       integer,
+  data              jsonb not null,
+  deleted           boolean not null default false,
+  updated_at        bigint not null,
+  server_updated_at timestamptz not null default clock_timestamp()
+);
+create index if not exists pit_reports_org_sync on public.pit_reports (org_id, server_updated_at);
+
 drop trigger if exists tournaments_sync_guard on public.tournaments;
 create trigger tournaments_sync_guard before insert or update on public.tournaments
   for each row execute function public.sync_guard();
 drop trigger if exists reports_sync_guard on public.reports;
 create trigger reports_sync_guard before insert or update on public.reports
   for each row execute function public.sync_guard();
+drop trigger if exists pit_reports_sync_guard on public.pit_reports;
+create trigger pit_reports_sync_guard before insert or update on public.pit_reports
+  for each row execute function public.sync_guard();
 
 alter table public.tournaments enable row level security;
 alter table public.reports enable row level security;
+alter table public.pit_reports enable row level security;
 
 -- Everyone on the team reads and writes the team's tournaments and recordings
 -- (deleting is a soft delete through `deleted`); public teams are readable by anyone.
@@ -415,6 +433,17 @@ create policy "reports: write" on public.reports for insert to authenticated wit
 drop policy if exists "reports: update" on public.reports;
 create policy "reports: update" on public.reports for update to authenticated
   using (org_id = public.my_org()) with check (org_id = public.my_org());
+
+drop policy if exists "pit_reports: read" on public.pit_reports;
+create policy "pit_reports: read" on public.pit_reports for select to authenticated using (org_id = public.my_org());
+drop policy if exists "pit_reports: write" on public.pit_reports;
+create policy "pit_reports: write" on public.pit_reports for insert to authenticated with check (org_id = public.my_org());
+drop policy if exists "pit_reports: update" on public.pit_reports;
+create policy "pit_reports: update" on public.pit_reports for update to authenticated
+  using (org_id = public.my_org()) with check (org_id = public.my_org());
+
+revoke all on public.pit_reports from anon, authenticated;
+grant select, insert, update on public.pit_reports to authenticated;
 
 revoke all on public.tournaments, public.reports from anon, authenticated;
 grant select on public.tournaments, public.reports to anon, authenticated;

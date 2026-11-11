@@ -148,3 +148,43 @@ export interface Tournament {
   updatedAt: number
   deleted: boolean
 }
+
+/** A yes/no question asked in the pits; null until someone asks. */
+export type Answer = boolean | null
+export type Aiming = 'turret' | 'fixed'
+export type Launcher = 'over' | 'under' | 'counterRoller' | 'other'
+export type RobotSize = 'small' | 'medium' | 'big'
+
+/**
+ * What a team told us about their robot before matches (pre-match / pit
+ * scouting). One per team per tournament, shared by the whole scouting team:
+ * its id comes from the tournament and team number, so two scouts filling it
+ * in offline land on the same document and the last save wins.
+ */
+export interface PitReport {
+  id: string
+  schemaVersion: 1
+  tournamentId: string
+  teamNumber: number
+  teamName: string
+  autoLeave: Answer
+  autoPark: Answer
+  /** Up to two, drawn on the red half (see PIT_ALLIANCE). */
+  starts: StartPose[]
+  expectedBalls: number | null
+  expectedTips: number | null
+  aiming: Aiming | null
+  launcher: Launcher | null
+  /** What the launcher is when `launcher` is 'other'. */
+  launcherOther: string
+  flowerIntake: Answer
+  size: RobotSize | null
+  strengths: string
+  improvements: string
+  extra: string
+  /** Whoever saved it last. */
+  editedBy?: { userId: string; username: string } | null
+  createdAt: number
+  updatedAt: number
+  deleted: boolean
+}

@@ -1,5 +1,5 @@
 import { alliancePostPoints, pointsFor, robotStats, winnerOf } from './scoring'
-import type { Report, Tournament } from './types'
+import type { PitReport, Report, Tournament } from './types'
 
 export const EXPORT_APP = 'aragon-scout'
 
@@ -10,6 +10,8 @@ export interface ExportFile {
   scoutingTeam: number | null
   tournaments: Tournament[]
   reports: (Report & { computed: ReturnType<typeof computed> })[]
+  /** Pre-match / pit scouting; missing from files exported before it existed. */
+  pitReports?: PitReport[]
 }
 
 function computed(report: Report, tournament: Tournament | undefined) {
@@ -22,9 +24,10 @@ function computed(report: Report, tournament: Tournament | undefined) {
 }
 
 /** Compiles reports into the downloadable JSON, with derived stats alongside the raw data. */
-export function buildExport(reports: Report[], tournaments: Tournament[], scoutingTeam: number | null): ExportFile {
+export function buildExport(reports: Report[], tournaments: Tournament[], scoutingTeam: number | null, pitReports: PitReport[] = []): ExportFile {
   const live = reports.filter((r) => !r.deleted)
-  const usedIds = new Set(live.map((r) => r.tournamentId))
+  const livePit = pitReports.filter((r) => !r.deleted)
+  const usedIds = new Set<string | null>([...live.map((r) => r.tournamentId), ...livePit.map((r) => r.tournamentId)])
   const ts = tournaments.filter((t) => !t.deleted && usedIds.has(t.id))
   const byId = new Map(ts.map((t) => [t.id, t]))
   return {
@@ -34,6 +37,7 @@ export function buildExport(reports: Report[], tournaments: Tournament[], scouti
     scoutingTeam,
     tournaments: ts,
     reports: live.map((r) => ({ ...r, computed: computed(r, byId.get(r.tournamentId ?? '')) })),
+    pitReports: livePit,
   }
 }
 
@@ -58,7 +62,7 @@ function isObj(v: unknown): v is Record<string, unknown> {
 }
 
 /** Validates an exported file and returns clean documents (derived stats are dropped). */
-export function parseImport(text: string): { scoutingTeam: number | null; tournaments: Tournament[]; reports: Report[] } {
+export function parseImport(text: string): { scoutingTeam: number | null; tournaments: Tournament[]; reports: Report[]; pitReports: PitReport[] } {
   let data: unknown
   try {
     data = JSON.parse(text)
@@ -83,5 +87,13 @@ export function parseImport(text: string): { scoutingTeam: number | null; tourna
     }
     tournaments.push(t as unknown as Tournament)
   }
-  return { scoutingTeam: typeof data.scoutingTeam === 'number' ? data.scoutingTeam : null, tournaments, reports }
+  const pitReports: PitReport[] = []
+  if (data.pitReports !== undefined && !Array.isArray(data.pitReports)) throw new Error('The file contains malformed pit scouting.')
+  for (const p of (data.pitReports as unknown[] | undefined) ?? []) {
+    if (!isObj(p) || typeof p.id !== 'string' || typeof p.tournamentId !== 'string' || typeof p.teamNumber !== 'number') {
+      throw new Error('The file contains a malformed pit report.')
+    }
+    pitReports.push(p as unknown as PitReport)
+  }
+  return { scoutingTeam: typeof data.scoutingTeam === 'number' ? data.scoutingTeam : null, tournaments, reports, pitReports }
 }

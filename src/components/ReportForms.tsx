@@ -230,6 +230,36 @@ export function ToggleButton({
   )
 }
 
+const NEXT_ANSWER = new Map<boolean | null, boolean | null>([
+  [null, true],
+  [true, false],
+  [false, null],
+])
+
+/**
+ * A yes/no that may not have been asked yet, for pit scouting: gray "–" (not
+ * asked) → green ✓ → red ✗ → back to not asked. Same look as ToggleButton.
+ */
+export function AnswerToggle({ label, value, onChange, className }: { label: string; value: boolean | null; onChange(v: boolean | null): void; className?: string }) {
+  const look = value == null ? 'border-line bg-surface-2 text-ink-2' : value ? GOOD : BAD
+  const dot = value == null ? 'border-2 border-ink-3 text-ink-3' : value ? 'bg-good text-white' : 'bg-red text-white'
+  const state = value == null ? 'not asked' : value ? 'yes' : 'no'
+  return (
+    <button
+      type="button"
+      aria-label={`${label}: ${state}. Tap to change.`}
+      onClick={() => onChange(NEXT_ANSWER.get(value) ?? null)}
+      className={cx('flex h-12 items-center gap-2 rounded-xl border-2 px-3 text-[15px] font-medium transition-colors', look, className)}
+    >
+      <span aria-hidden className={cx('flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold', dot)}>
+        {value == null ? '–' : value ? '✓' : '✗'}
+      </span>
+      <span className="flex-1 text-left">{label}</span>
+      <span className="text-xs font-normal text-ink-3">{state}</span>
+    </button>
+  )
+}
+
 export function TogglesForm({ value, onChange }: { value: Toggles; onChange(v: Toggles): void }) {
   return (
     <div className="grid grid-cols-3 gap-2">

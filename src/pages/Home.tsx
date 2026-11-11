@@ -59,6 +59,9 @@ export function HomePage() {
       </ol>
 
       <div className="mt-12 grid grid-cols-2 gap-2">
+        <Link to="/pit" className="rounded-2xl border border-line bg-surface px-4 py-4 text-sm hover:border-ink-3">
+          Pre-match / Pit scouting
+        </Link>
         <Link to="/matches" className="rounded-2xl border border-line bg-surface px-4 py-4 text-sm hover:border-ink-3">
           My matches
         </Link>

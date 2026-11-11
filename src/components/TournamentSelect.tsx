@@ -6,10 +6,13 @@ export function TournamentSelect({
   tournaments,
   value,
   onChange,
+  allowAll = true,
 }: {
   tournaments: Tournament[]
   value: string
   onChange(v: string): void
+  /** Offer "All tournaments" at the end. */
+  allowAll?: boolean
 }) {
   return (
     <select
@@ -23,7 +26,7 @@ export function TournamentSelect({
           {t.name}
         </option>
       ))}
-      <option value={ALL}>All tournaments</option>
+      {allowAll && <option value={ALL}>All tournaments</option>}
     </select>
   )
 }

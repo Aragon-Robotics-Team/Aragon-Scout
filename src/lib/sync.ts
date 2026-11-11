@@ -2,11 +2,17 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Table } from 'dexie'
 import { getMeta, onLocalChange, setMeta, type ScoutDB } from './db'
 import { shouldAcceptRemote } from './merge'
-import type { Report, Tournament } from './types'
+import type { PitReport, Report, Tournament } from './types'
 
 export type SyncStatus = 'offline' | 'syncing' | 'synced' | 'error'
 
 type Doc = { id: string; updatedAt: number; deleted: boolean }
+type TableName = 'reports' | 'tournaments' | 'pit_reports'
+
+/** The server hasn't got this table yet (its schema predates it). */
+export function isMissingTable(message: string): boolean {
+  return /does not exist|could not find the table|PGRST205|42P01/i.test(message)
+}
 type LocalTable<D extends Doc> = Table<{ id: string; dirty: 0 | 1; doc: D }, string>
 
 interface RemoteRow {
@@ -118,6 +124,7 @@ export class SyncEngine {
         match_number: doc.pre.matchNumber,
         scouted_team: doc.pre.teamNumber,
       }))
+      await this.syncPitReports()
       this.set('synced')
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
@@ -125,7 +132,26 @@ export class SyncEngine {
     }
   }
 
-  private async pull<D extends Doc>(table: 'reports' | 'tournaments', local: LocalTable<D>) {
+  /**
+   * Pit reports came after the first server schema. Until supabase/schema.sql is
+   * re-run their table is missing: recordings still sync, and pit reports wait
+   * on the device (an error only once there's one to push).
+   */
+  private async syncPitReports() {
+    try {
+      await this.pull<PitReport>('pit_reports', this.db.pitReports)
+    } catch (err) {
+      if (!(err instanceof Error && isMissingTable(err.message))) throw err
+      if ((await this.db.pitReports.where('dirty').equals(1).count()) === 0) return
+      throw new Error('Pit scouting needs a server update: re-run supabase/schema.sql in Supabase.')
+    }
+    await this.push<PitReport>('pit_reports', this.db.pitReports, (doc) => ({
+      tournament_id: doc.tournamentId,
+      team_number: doc.teamNumber,
+    }))
+  }
+
+  private async pull<D extends Doc>(table: TableName, local: LocalTable<D>) {
     const cursorKey = `cursor:${table}`
     let cursor = (await getMeta<string>(this.db, cursorKey)) ?? '1970-01-01T00:00:00Z'
     const since = new Date(new Date(cursor).getTime() - OVERLAP_MS).toISOString()
@@ -157,7 +183,7 @@ export class SyncEngine {
   }
 
   private async push<D extends Doc>(
-    table: 'reports' | 'tournaments',
+    table: TableName,
     local: LocalTable<D>,
     extra: (doc: D) => Record<string, unknown>,
   ) {

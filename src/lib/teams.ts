@@ -23,6 +23,19 @@ export function mergeTeams(existing: TournamentTeam[], incoming: TournamentTeam[
   return [...byNumber.values()].sort((a, b) => a.number - b.number)
 }
 
+/**
+ * The tournament's team list with this team added (or its blank name filled
+ * in), or null when the list already has it. Recordings and pit reports call
+ * this on save, so a team typed in by hand can be picked on every device.
+ */
+export function withTeamAdded(t: Tournament, number: number | null, name: string): TournamentTeam[] | null {
+  if (number == null) return null
+  const list = teamsOf(t)
+  const known = list.find((x) => x.number === number)
+  if (known && (known.name || !name.trim())) return null
+  return mergeTeams(list, [{ number, name }])
+}
+
 /** Parses pasted lines like "12345 Buzz Bots", "12345, Buzz Bots" or "12345\tBuzz Bots". */
 export function parseTeamList(text: string): TournamentTeam[] {
   const out: TournamentTeam[] = []

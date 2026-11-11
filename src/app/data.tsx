@@ -4,7 +4,8 @@ import { deleteLegacyDatabases, openDb, type ScoutDB } from '../lib/db'
 import { supabase } from '../lib/supabase'
 import { SyncEngine, type SyncStatus } from '../lib/sync'
 import { readJson, writeJson } from '../lib/storage'
-import type { Report, Tournament } from '../lib/types'
+import { normalizePitReport } from '../lib/pit'
+import type { PitReport, Report, Tournament } from '../lib/types'
 import type { Account } from './auth'
 
 /**
@@ -14,6 +15,8 @@ import type { Account } from './auth'
 export interface DataValue {
   reports: Report[]
   tournaments: Tournament[]
+  /** Pre-match / pit scouting. Never part of the public share view. */
+  pitReports: PitReport[]
   loaded: boolean
   readOnly: boolean
   /** Route prefix for links, e.g. '' or '/t/12345'. */
@@ -68,8 +71,12 @@ export function LocalDataProvider({ account, children }: { account: Account & { 
         .sort((a, b) => b.createdAt - a.createdAt),
     [db],
   )
+  const pitReports = useLiveQuery(async () => (await db.pitReports.toArray()).map((r) => normalizePitReport(r.doc)).filter((r) => !r.deleted), [db])
   const pending = useLiveQuery(
-    async () => (await db.reports.where('dirty').equals(1).count()) + (await db.tournaments.where('dirty').equals(1).count()),
+    async () =>
+      (await db.reports.where('dirty').equals(1).count()) +
+      (await db.tournaments.where('dirty').equals(1).count()) +
+      (await db.pitReports.where('dirty').equals(1).count()),
     [db],
   )
 
@@ -93,7 +100,8 @@ export function LocalDataProvider({ account, children }: { account: Account & { 
   const value: DataValue = {
     reports: reports ?? [],
     tournaments: tournaments ?? [],
-    loaded: reports !== undefined && tournaments !== undefined,
+    pitReports: pitReports ?? [],
+    loaded: reports !== undefined && tournaments !== undefined && pitReports !== undefined,
     readOnly: false,
     base: '',
     db,
@@ -121,6 +129,7 @@ export function StaticDataProvider({
   const value: DataValue = {
     reports,
     tournaments,
+    pitReports: [],
     loaded: true,
     readOnly: true,
     base,

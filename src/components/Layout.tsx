@@ -7,6 +7,7 @@ import { cx } from './ui'
 const NAV = [
   { to: '/', label: 'Home' },
   { to: '/record', label: 'Record a match' },
+  { to: '/pit', label: 'Pre-match / Pit scouting' },
   { to: '/matches', label: 'My matches' },
   { to: '/analysis', label: 'Tournament analysis' },
   { to: '/tournaments', label: 'Tournaments' },

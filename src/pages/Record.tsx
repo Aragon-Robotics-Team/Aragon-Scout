@@ -9,7 +9,7 @@ import { factMessage, matchFacts, needsFixing, resolutionsFor, type Fact } from 
 import { saveReport, saveTournament } from '../lib/db'
 import { matchLabel, matchPath, matchTypeOf } from '../lib/matches'
 import { pointsFor } from '../lib/scoring'
-import { mergeTeams, teamNameIndex, teamsOf } from '../lib/teams'
+import { teamNameIndex, withTeamAdded } from '../lib/teams'
 import { newReport } from '../lib/factories'
 import { readJson, removeKey, writeJson } from '../lib/storage'
 import { MATCH_MS, type Clock } from '../lib/timing'
@@ -96,15 +96,8 @@ export function RecordPage() {
     const submit = async () => {
       await saveReport(db, report)
       // A team typed in by hand joins the tournament's list so every device can pick it next time.
-      const n = report.pre.teamNumber
-      if (tournament && n != null) {
-        const list = teamsOf(tournament)
-        const known = list.find((t) => t.number === n)
-        const name = report.pre.teamName.trim()
-        if (!known || (!known.name && name)) {
-          await saveTournament(db, { ...tournament, teams: mergeTeams(list, [{ number: n, name }]) })
-        }
-      }
+      const teams = tournament && withTeamAdded(tournament, report.pre.teamNumber, report.pre.teamName)
+      if (tournament && teams) await saveTournament(db, { ...tournament, teams })
       removeKey(draftKey)
       navigate(matchPath('', report.tournamentId, report.pre, report.id), { replace: true })
     }

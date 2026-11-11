@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie'
-import type { Report, Tournament } from './types'
+import type { PitReport, Report, Tournament } from './types'
 
 /** `dirty` = 1 while the row has local changes not yet pushed to the cloud. */
 export interface LocalReport {
@@ -14,6 +14,12 @@ export interface LocalTournament {
   doc: Tournament
 }
 
+export interface LocalPitReport {
+  id: string
+  dirty: 0 | 1
+  doc: PitReport
+}
+
 export interface MetaRow {
   key: string
   value: unknown
@@ -22,6 +28,7 @@ export interface MetaRow {
 export class ScoutDB extends Dexie {
   reports!: Table<LocalReport, string>
   tournaments!: Table<LocalTournament, string>
+  pitReports!: Table<LocalPitReport, string>
   meta!: Table<MetaRow, string>
 
   constructor(name: string) {
@@ -30,6 +37,9 @@ export class ScoutDB extends Dexie {
       reports: 'id, dirty',
       tournaments: 'id, dirty',
       meta: 'key',
+    })
+    this.version(2).stores({
+      pitReports: 'id, dirty',
     })
   }
 }
@@ -72,6 +82,15 @@ export async function saveReport(db: ScoutDB, doc: Report): Promise<void> {
 export async function saveTournament(db: ScoutDB, doc: Tournament): Promise<void> {
   await db.tournaments.put({ id: doc.id, dirty: 1, doc: { ...doc, updatedAt: Date.now() } })
   notifyLocalChange()
+}
+
+export async function savePitReport(db: ScoutDB, doc: PitReport): Promise<void> {
+  await db.pitReports.put({ id: doc.id, dirty: 1, doc: { ...doc, updatedAt: Date.now() } })
+  notifyLocalChange()
+}
+
+export async function deletePitReport(db: ScoutDB, doc: PitReport): Promise<void> {
+  await savePitReport(db, { ...doc, deleted: true })
 }
 
 export async function deleteReport(db: ScoutDB, doc: Report): Promise<void> {

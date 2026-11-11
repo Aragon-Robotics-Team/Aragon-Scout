@@ -13,6 +13,7 @@ import { PublicTeamPage } from './pages/PublicTeam'
 import { RecordPage } from './pages/Record'
 import { SignInPage } from './pages/SignIn'
 import { TeamDetailPage } from './pages/TeamDetail'
+import { PitFormPage, PitListPage } from './pages/PitScouting'
 import { TeamSetupPage } from './pages/TeamSetup'
 import { TournamentDetailPage } from './pages/TournamentDetail'
 import { TournamentsPage } from './pages/Tournaments'
@@ -28,6 +29,8 @@ function PrivateApp() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/record" element={<RecordPage />} />
+          <Route path="/pit" element={<PitListPage />} />
+          <Route path="/pit/:tid/:team" element={<PitFormPage />} />
           <Route path="/matches" element={<MatchesPage />} />
           <Route path="/matches/:tid/:match" element={<MatchDetailPage />} />
           <Route path="/reports/:id/edit" element={<EditReportPage />} />

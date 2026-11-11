@@ -17,6 +17,13 @@ Real-time match scouting for the FTC **BIOBUZZ** (2026–27) season. It's a phon
 - **Tournament setup:**
   - a **team list**: paste, add by hand, or fetch from FTCScout, which feeds a type-to-filter team name dropdown
   - a **qualification schedule**: typed into a grid, pasted, read from an FTC Live / MatchMaker **PDF** on the device, or fetched from FTCScout. Every source goes through a review grid before it's saved.
+- **Pre-match / Pit scouting:** before matches start, scouts visit teams in the pits. The page lists the current tournament's teams with a ✓ for each one done (e.g. "14 / 32 scouted") and an **Add team** button for teams not on the list. Each team has **one shared report per tournament** that anyone can edit; the last save wins and shows who saved it. Only the team number is required:
+  - **Team:** number and name (saving adds the team to the tournament's list, so it autofills later)
+  - **Auto:** leave and park, up to 2 starting positions (drawn on the red side), expected balls and hive tips
+  - **Mechanism:** aiming (turret / fixed), launcher (fixed over / fixed under / counter-roller or roller on hood / other), flower intake, size (small / medium / big)
+  - **Notes:** strengths and weaknesses, improvements from prior competitions, extra info
+
+  Yes/no answers start as **not asked** (gray –), then ✓, then ✗, so an unanswered question never reads as "no". Pit reports sync like recordings and are part of JSON export, but are **never shown on the public share link**.
 - **Schedule-aware recording:** for a scheduled qual, enter the match # and tap one of the 4 robots to fill in the team, alliance, partner and opponents. Partner and opponent fields take a team number or name. When the schedule doesn't cover a match (playoffs), the lineup is filled from other recordings of that match; anything already typed only gets a suggestion. Qual and playoff matches are kept apart (Q12 / P3).
 - **Tournament analysis:** ranked by **OPR**, plus per-team averages, accuracy, park rates, estimated robot points, and a per-match chart.
   - **Cycle time:** teleop shots (scored or missed, nectar or pollen) each within 3 s of the one before form a stack; a cycle is the time from one stack's start to the next. Teams show the median of every cycle pooled across their matches, so one slow cycle doesn't skew it. Recordings whose clock was stopped aren't timed. The gap is `STACK_GAP_MS` in `src/lib/cycles.ts`.
@@ -46,7 +53,7 @@ Without Supabase keys the app runs in **local-only mode**: one offline user with
 1. Create a project at [supabase.com](https://supabase.com). The free tier is fine.
 2. **SQL Editor → New query**: paste all of [`supabase/schema.sql`](supabase/schema.sql) and click **Run**. It's safe to run again. This creates:
    - `profiles` (one per person, unique `@username`), `organizations` (one per FTC team number), `memberships` and `invites`
-   - `tournaments` and `reports`, owned by an organization (each is a `jsonb` document)
+   - `tournaments`, `reports` and `pit_reports`, owned by an organization (each is a `jsonb` document)
    - Row Level Security: only the team's members can read and write its data (reads are public if the team turns on sharing), and every team/member/invite change goes through server functions that check the caller's role
    - a last-write-wins guard for offline sync
 
