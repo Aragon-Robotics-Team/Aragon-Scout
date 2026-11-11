@@ -68,6 +68,9 @@ export function HomePage() {
         <Link to="/analysis" className="rounded-2xl border border-line bg-surface px-4 py-4 text-sm hover:border-ink-3">
           Tournament analysis
         </Link>
+        <Link to="/teams" className="rounded-2xl border border-line bg-surface px-4 py-4 text-sm hover:border-ink-3">
+          Team database
+        </Link>
       </div>
     </Page>
   )

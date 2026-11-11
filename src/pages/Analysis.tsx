@@ -112,7 +112,7 @@ export function AnalysisPage() {
             {teams.map((t) => (
               <li key={t.teamNumber}>
                 <Link
-                  to={`${base}/analysis/${t.teamNumber}${scope !== ALL ? `?t=${scope}` : ''}`}
+                  to={`${base}/teams/${t.teamNumber}${scope !== ALL ? `?t=${scope}` : ''}`}
                   className="grid grid-cols-[1fr_2.75rem_2.5rem_3.25rem_2.75rem_2.75rem] items-center rounded-2xl border border-line bg-surface px-4 py-3 transition-colors hover:border-ink-3"
                 >
                   <span className="min-w-0">

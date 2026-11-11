@@ -12,7 +12,8 @@ import { MatchesPage } from './pages/Matches'
 import { PublicTeamPage } from './pages/PublicTeam'
 import { RecordPage } from './pages/Record'
 import { SignInPage } from './pages/SignIn'
-import { TeamDetailPage } from './pages/TeamDetail'
+import { LegacyTeamRedirect, TeamDetailPage } from './pages/TeamDetail'
+import { TeamDatabasePage } from './pages/TeamDatabase'
 import { PitFormPage, PitListPage } from './pages/PitScouting'
 import { TeamSetupPage } from './pages/TeamSetup'
 import { TournamentDetailPage } from './pages/TournamentDetail'
@@ -35,7 +36,9 @@ function PrivateApp() {
           <Route path="/matches/:tid/:match" element={<MatchDetailPage />} />
           <Route path="/reports/:id/edit" element={<EditReportPage />} />
           <Route path="/analysis" element={<AnalysisPage />} />
-          <Route path="/analysis/:team" element={<TeamDetailPage />} />
+          <Route path="/analysis/:team" element={<LegacyTeamRedirect />} />
+          <Route path="/teams" element={<TeamDatabasePage />} />
+          <Route path="/teams/:team" element={<TeamDetailPage />} />
           <Route path="/tournaments" element={<TournamentsPage />} />
           <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
           <Route path="/data" element={<DataPage />} />

@@ -24,6 +24,7 @@ Real-time match scouting for the FTC **BIOBUZZ** (2026–27) season. It's a phon
   - **Notes:** strengths and weaknesses, improvements from prior competitions, extra info
 
   Yes/no answers start as **not asked** (gray –), then ✓, then ✗, so an unanswered question never reads as "no". Pit reports sync like recordings and are part of JSON export, but are **never shown on the public share link**.
+- **Team database:** every team scouted in a recording or the pits, across all tournaments. Search by number or name; filter by tournament, pit report, aiming, launcher, flower intake, size and auto leave (robot filters use the newest pit report, or the picked tournament's); sort by number, name, last seen, matches, estimated points or cycle time. Tapping a team (here, or anywhere a team is listed) opens its **team page**: lifetime stats (or one tournament's, with the toggle), the latest pit report with earlier ones under **Previous pit reports**, OPR at each tournament, and every recorded match it played in, labeled **Scouted**, **Partner** or **Opponent**. Stats only count matches where the team was the scouted robot. Old `/analysis/<team#>` links redirect to `/teams/<team#>`.
 - **Schedule-aware recording:** for a scheduled qual, enter the match # and tap one of the 4 robots to fill in the team, alliance, partner and opponents. Partner and opponent fields take a team number or name. When the schedule doesn't cover a match (playoffs), the lineup is filled from other recordings of that match; anything already typed only gets a suggestion. Qual and playoff matches are kept apart (Q12 / P3).
 - **Tournament analysis:** ranked by **OPR**, plus per-team averages, accuracy, park rates, estimated robot points, and a per-match chart.
   - **Cycle time:** teleop shots (scored or missed, nectar or pollen) each within 3 s of the one before form a stack; a cycle is the time from one stack's start to the next. Teams show the median of every cycle pooled across their matches, so one slow cycle doesn't skew it. Recordings whose clock was stopped aren't timed. The gap is `STACK_GAP_MS` in `src/lib/cycles.ts`.
@@ -31,7 +32,7 @@ Real-time match scouting for the FTC **BIOBUZZ** (2026–27) season. It's a phon
   - Scores are FTCScout's official non-penalty totals when the tournament has an event code and the device has been online (results are saved on the device); matches FTCScout doesn't have use each alliance's penalty-free estimate from your recordings.
   - A team needs 3+ matches to be rated, and the event needs at least 1.5 alliance scores per team.
 - **JSON export** (one match, one tournament, or everything) and import.
-- **Optional public sharing** as a read-only link `/t/<team#>`, turned on by an owner or admin. Only your team's members can ever write.
+- **Optional public sharing** as a read-only link `/t/<team#>` (matches, analysis and the team database), turned on by an owner or admin. Pit scouting is never shared. Only your team's members can ever write.
 
 Point values default to Competition Manual V1, Table 10-2 and Table 10-3. They can be edited per tournament.
 
@@ -54,7 +55,7 @@ Without Supabase keys the app runs in **local-only mode**: one offline user with
 2. **SQL Editor → New query**: paste all of [`supabase/schema.sql`](supabase/schema.sql) and click **Run**. It's safe to run again. This creates:
    - `profiles` (one per person, unique `@username`), `organizations` (one per FTC team number), `memberships` and `invites`
    - `tournaments`, `reports` and `pit_reports`, owned by an organization (each is a `jsonb` document)
-   - Row Level Security: only the team's members can read and write its data (reads are public if the team turns on sharing), and every team/member/invite change goes through server functions that check the caller's role
+   - Row Level Security: only the team's members can read and write its data (reads are public if the team turns on sharing, except pit reports, which stay private), and every team/member/invite change goes through server functions that check the caller's role
    - a last-write-wins guard for offline sync
 
    > **Upgrading from the shared team logins (v1)?** Running the new schema **deletes the old team logins and all of their tournaments and recordings** (there's no undo), then sets up individual accounts. Export anything you want to keep from the Data page first. Afterwards every scout signs up for their own account, and each phone clears its old local copy at sign-in.

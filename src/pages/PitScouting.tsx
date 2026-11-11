@@ -216,14 +216,29 @@ function PitForm({ initial, isNew, saved, knownNames }: { initial: PitReport; is
         </p>
       </div>
 
-      {saved && (
+      {!isNew && (
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <p className="mr-auto text-xs text-ink-3">
-            Last saved{initial.editedBy && <> by @{initial.editedBy.username}</>} · {new Date(initial.updatedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+            {saved ? (
+              <>
+                Last saved{initial.editedBy && <> by @{initial.editedBy.username}</>} ·{' '}
+                {new Date(initial.updatedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+              </>
+            ) : (
+              'Not scouted yet'
+            )}
           </p>
-          <Button variant="danger" onClick={remove}>
-            Delete
-          </Button>
+          <Link
+            to={`/teams/${initial.teamNumber}?t=${tournament.id}`}
+            className="inline-flex h-11 items-center rounded-xl border border-line bg-surface-2 px-4 text-sm font-medium text-ink hover:border-ink-3"
+          >
+            View in database
+          </Link>
+          {saved && (
+            <Button variant="danger" onClick={remove}>
+              Delete
+            </Button>
+          )}
         </div>
       )}
 

@@ -8,7 +8,8 @@ import type { Report, Tournament } from '../lib/types'
 import { AnalysisPage } from './Analysis'
 import { MatchDetailPage } from './MatchDetail'
 import { MatchesPage } from './Matches'
-import { TeamDetailPage } from './TeamDetail'
+import { LegacyTeamRedirect, TeamDetailPage } from './TeamDetail'
+import { TeamDatabasePage } from './TeamDatabase'
 
 type Loaded = { teamName: string; reports: Report[]; tournaments: Tournament[] }
 
@@ -78,6 +79,7 @@ export function PublicTeamPage() {
             {[
               [base, 'Matches'],
               [`${base}/analysis`, 'Analysis'],
+              [`${base}/teams`, 'Teams'],
             ].map(([to, label]) => (
               <NavLink
                 key={to}
@@ -109,7 +111,9 @@ export function PublicTeamPage() {
             <Route path="matches" element={<MatchesPage />} />
             <Route path="matches/:tid/:match" element={<MatchDetailPage />} />
             <Route path="analysis" element={<AnalysisPage />} />
-            <Route path="analysis/:team" element={<TeamDetailPage />} />
+            <Route path="analysis/:team" element={<LegacyTeamRedirect />} />
+            <Route path="teams" element={<TeamDatabasePage />} />
+            <Route path="teams/:team" element={<TeamDetailPage />} />
           </Routes>
         </StaticDataProvider>
       )}

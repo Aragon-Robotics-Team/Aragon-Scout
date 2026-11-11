@@ -10,6 +10,7 @@ const NAV = [
   { to: '/pit', label: 'Pre-match / Pit scouting' },
   { to: '/matches', label: 'My matches' },
   { to: '/analysis', label: 'Tournament analysis' },
+  { to: '/teams', label: 'Team database' },
   { to: '/tournaments', label: 'Tournaments' },
   { to: '/data', label: 'Import / export' },
   { to: '/account', label: 'Account' },
