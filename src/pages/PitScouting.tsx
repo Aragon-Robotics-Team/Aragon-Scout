@@ -148,8 +148,9 @@ export function PitFormPage() {
   const existing = teamNumber != null ? pitReports.find((r) => r.id === pitReportId(tournament.id, teamNumber)) : undefined
   const knownNames = teamNameIndex(tournaments, reports)
   const initial = existing ?? newPitReport(tournament.id, teamNumber ?? 0, teamNumber != null ? (knownNames.get(teamNumber) ?? '') : '')
-  // Keyed so a different team (or a report arriving from sync before any edit) starts a fresh form.
-  return <PitForm key={`${tournament.id}:${team}:${existing ? 'saved' : 'new'}`} initial={initial} isNew={isNew} saved={!!existing} knownNames={knownNames} />
+  // Keyed by team only: a report that syncs in mid-edit (another scout saved it) mustn't wipe what's typed.
+  // The header then shows their save, and saving here replaces it (last save wins).
+  return <PitForm key={`${tournament.id}:${team}`} initial={initial} isNew={isNew} saved={!!existing} knownNames={knownNames} />
 }
 
 function PitForm({ initial, isNew, saved, knownNames }: { initial: PitReport; isNew: boolean; saved: boolean; knownNames: Map<number, string> }) {
