@@ -25,6 +25,11 @@ export function matchPath(base: string, tournamentId: string | null, pre: Pick<P
   return reportId ? `${path}?r=${reportId}` : path
 }
 
+/** A team's page, opened on one tournament's stats when there is one. */
+export function teamPath(base: string, teamNumber: number, tournamentId?: string | null): string {
+  return `${base}/teams/${teamNumber}${tournamentId ? `?t=${tournamentId}` : ''}`
+}
+
 /** Quals before playoffs, then by number. */
 export function compareMatches(
   a: { type: MatchType; number: number },

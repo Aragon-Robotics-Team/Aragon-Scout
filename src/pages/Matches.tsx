@@ -4,7 +4,7 @@ import { useData } from '../app/data'
 import { ALL, TournamentSelect } from '../components/TournamentSelect'
 import { Empty, Page, SearchInput, TeamChip, cx } from '../components/ui'
 import { groupMatches, type MatchGroup } from '../lib/grouping'
-import { matchLabel } from '../lib/matches'
+import { matchLabel, teamPath } from '../lib/matches'
 import type { Alliance } from '../lib/types'
 
 function matchesQuery(g: MatchGroup, q: string): boolean {
@@ -71,7 +71,11 @@ export function MatchesPage() {
               <ul className="space-y-2">
                 {s.groups.map((g) => (
                   <li key={g.key}>
-                    <MatchRow group={g} href={`${base}/matches/${g.tournamentId ?? 'none'}/${matchLabel(g.matchType, g.matchNumber)}`} />
+                    <MatchRow
+                      group={g}
+                      href={`${base}/matches/${g.tournamentId ?? 'none'}/${matchLabel(g.matchType, g.matchNumber)}`}
+                      teamHref={(n) => teamPath(base, n, g.tournamentId)}
+                    />
                   </li>
                 ))}
               </ul>
@@ -83,26 +87,32 @@ export function MatchesPage() {
   )
 }
 
-function AllianceCell({ alliance, teams }: { alliance: Alliance; teams: MatchGroup['red'] }) {
+function AllianceCell({ alliance, teams, teamHref }: { alliance: Alliance; teams: MatchGroup['red']; teamHref(n: number): string }) {
   return (
     <div className={cx('flex min-w-0 flex-wrap items-center gap-1 border-l-2 px-2.5 py-2', alliance === 'red' ? 'border-red' : 'border-blue')}>
-      {teams.length === 0 ? <span className="text-sm text-ink-3">—</span> : teams.map((t) => <TeamChip key={t.number} number={t.number} alliance={alliance} highlight={t.scouted} />)}
+      {teams.length === 0 ? (
+        <span className="text-sm text-ink-3">—</span>
+      ) : (
+        teams.map((t) => <TeamChip key={t.number} number={t.number} alliance={alliance} highlight={t.scouted} to={teamHref(t.number)} />)
+      )}
     </div>
   )
 }
 
-function MatchRow({ group: g, href }: { group: MatchGroup; href: string }) {
+function MatchRow({ group: g, href, teamHref }: { group: MatchGroup; href: string; teamHref(n: number): string }) {
   const unsettled = (key: 'redScore' | 'blueScore') => g.facts.some((f) => f.key === key && f.value == null)
   const scored = g.redScore != null || g.blueScore != null || unsettled('redScore') || unsettled('blueScore')
   return (
-    <Link
-      to={href}
-      className="grid grid-cols-[3.25rem_5rem_1fr_1fr] items-stretch overflow-hidden rounded-2xl border border-line bg-surface transition-colors hover:border-ink-3"
-    >
-      <div className="flex flex-col items-center justify-center border-r border-line py-2">
+    // The whole row opens the match; the team numbers sit above that link and open each team's page.
+    <div className="relative grid grid-cols-[3.25rem_5rem_1fr_1fr] items-stretch overflow-hidden rounded-2xl border border-line bg-surface transition-colors hover:border-ink-3">
+      <Link
+        to={href}
+        aria-label={`${g.matchType === 'playoff' ? 'Playoff' : 'Qualification'} ${g.matchNumber}`}
+        className="flex flex-col items-center justify-center border-r border-line py-2 after:absolute after:inset-0"
+      >
         <span className="text-[10px] uppercase tracking-wider text-ink-3">{g.matchType === 'playoff' ? 'Playoff' : 'Qual'}</span>
         <span className="tnum text-lg font-semibold leading-tight">{g.matchNumber}</span>
-      </div>
+      </Link>
       <div className="tnum flex flex-col items-center justify-center border-r border-line text-sm">
         <span className="flex items-center gap-1">
         {scored ? (
@@ -121,8 +131,8 @@ function MatchRow({ group: g, href }: { group: MatchGroup; href: string }) {
           </span>
         )}
       </div>
-      <AllianceCell alliance="red" teams={g.red} />
-      <AllianceCell alliance="blue" teams={g.blue} />
-    </Link>
+      <AllianceCell alliance="red" teams={g.red} teamHref={teamHref} />
+      <AllianceCell alliance="blue" teams={g.blue} teamHref={teamHref} />
+    </div>
   )
 }

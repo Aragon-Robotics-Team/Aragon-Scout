@@ -13,7 +13,7 @@ import { FLOWER_NAMES } from '../lib/flowers'
 import { deleteReport, saveTournament } from '../lib/db'
 import { buildExport, downloadJson } from '../lib/exportData'
 import { allianceEstimate, groupMatches } from '../lib/grouping'
-import { matchLabel, matchTitle, matchTypeOf, parseMatchParam } from '../lib/matches'
+import { matchLabel, matchTitle, matchTypeOf, parseMatchParam, teamPath } from '../lib/matches'
 import { cycleTimes, formatSeconds, median } from '../lib/cycles'
 import { ESTIMATE_NOTE, alliancePostPoints, formatPct, pointsFor, robotStats, winnerOf } from '../lib/scoring'
 import type { Report, Resolution, Tournament } from '../lib/types'
@@ -96,7 +96,7 @@ export function MatchDetailPage() {
             <div className="text-[10px] uppercase tracking-wider text-ink-3">{a}</div>
             <div className="flex flex-wrap gap-1">
               {(a === 'red' ? group.red : group.blue).map((t) => (
-                <TeamChip key={t.number} number={t.number} alliance={a} highlight={t.scouted} />
+                <TeamChip key={t.number} number={t.number} alliance={a} highlight={t.scouted} to={teamPath(base, t.number, tournamentId)} />
               ))}
               {(a === 'red' ? group.red : group.blue).length === 0 && <span className="text-sm text-ink-3">—</span>}
             </div>
@@ -178,7 +178,7 @@ function acc(scored: number, missed: number) {
 }
 
 export function ReportView({ report, tournament }: { report: Report; tournament: Tournament | undefined }) {
-  const { readOnly } = useData()
+  const { readOnly, base } = useData()
   const { account } = useAuth()
   const { db } = useData()
   const navigate = useNavigate()
@@ -214,8 +214,14 @@ export function ReportView({ report, tournament }: { report: Report; tournament:
         <div className="flex items-baseline justify-between gap-3">
           <div className="min-w-0">
             <div className="truncate text-lg font-semibold">
-              <span className={report.pre.alliance === 'blue' ? 'text-blue' : 'text-red'}>{report.pre.teamNumber}</span>
-              {report.pre.teamName && <span className="text-ink"> · {report.pre.teamName}</span>}
+              {report.pre.teamNumber != null ? (
+                <Link to={teamPath(base, report.pre.teamNumber, report.tournamentId)} className="underline-offset-4 hover:underline">
+                  <span className={report.pre.alliance === 'blue' ? 'text-blue' : 'text-red'}>{report.pre.teamNumber}</span>
+                  {report.pre.teamName && <span className="text-ink"> · {report.pre.teamName}</span>}
+                </Link>
+              ) : (
+                <span className="text-ink-3">No team #</span>
+              )}
               {report.incomplete && <IncompleteBadge className="ml-2 align-middle" />}
             </div>
             <div className="text-sm text-ink-2">

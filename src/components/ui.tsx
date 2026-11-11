@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useEffect, useRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from 'react'
 import type { Alliance } from '../lib/types'
 
@@ -260,16 +261,19 @@ export function Stat({ label, value, sub }: { label: string; value: ReactNode; s
   )
 }
 
-export function TeamChip({ number, alliance, highlight }: { number: number; alliance: Alliance; highlight?: boolean }) {
-  return (
-    <span
-      className={cx(
-        'tnum inline-flex items-center rounded-md px-1.5 py-0.5 text-sm',
-        highlight ? (alliance === 'red' ? 'bg-red/20 text-ink font-semibold' : 'bg-blue/20 text-ink font-semibold') : 'text-ink-2',
-      )}
-    >
+/** A team number on its alliance's color; with `to`, a link (to the team's page). */
+export function TeamChip({ number, alliance, highlight, to }: { number: number; alliance: Alliance; highlight?: boolean; to?: string }) {
+  const className = cx(
+    'tnum inline-flex items-center rounded-md px-1.5 py-0.5 text-sm',
+    highlight ? (alliance === 'red' ? 'bg-red/20 text-ink font-semibold' : 'bg-blue/20 text-ink font-semibold') : 'text-ink-2',
+    to && 'relative z-10 underline-offset-2 hover:underline',
+  )
+  return to ? (
+    <Link to={to} className={className} aria-label={`Team ${number}`}>
       {number}
-    </span>
+    </Link>
+  ) : (
+    <span className={className}>{number}</span>
   )
 }
 

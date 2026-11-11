@@ -7,6 +7,7 @@ import { deleteTournament, saveTournament } from '../lib/db'
 import { fetchFtcScoutEvent } from '../lib/ftcscout'
 import { scheduleOf, scheduleTeams } from '../lib/schedule'
 import { DEFAULT_POINTS, DEFAULT_THRESHOLDS } from '../lib/scoring'
+import { teamPath } from '../lib/matches'
 import { mergeTeams, parseTeamList, teamsOf } from '../lib/teams'
 import type { PointValues, RpThresholds, ScheduledMatch, Tournament, TournamentTeam } from '../lib/types'
 
@@ -124,7 +125,11 @@ function ScheduleSection({ tournament }: { tournament: Tournament }) {
                   <tr key={m.match} className="border-t border-line">
                     <td className="py-1.5 text-left text-ink-2">{m.match}</td>
                     {[...m.red, ...m.blue].map((n, i) => (
-                      <td key={i}>{n}</td>
+                      <td key={i}>
+                        <Link to={teamPath('', n, tournament.id)} className="underline-offset-2 hover:underline">
+                          {n}
+                        </Link>
+                      </td>
                     ))}
                   </tr>
                 ))}
@@ -219,7 +224,9 @@ function TeamsSection({ tournament }: { tournament: Tournament }) {
         <ul className="mb-3 divide-y divide-line">
           {visible.map((t) => (
             <li key={t.number} className="flex items-center gap-2 py-1.5">
-              <span className="tnum w-14 shrink-0 text-sm text-ink-2">{t.number}</span>
+              <Link to={teamPath('', t.number, tournament.id)} className="tnum w-14 shrink-0 text-sm text-ink-2 underline-offset-2 hover:text-ink hover:underline">
+                {t.number}
+              </Link>
               <input
                 aria-label={`Name of team ${t.number}`}
                 defaultValue={t.name}
