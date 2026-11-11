@@ -6,10 +6,11 @@ import { Empty, Page, SearchInput, Segmented } from '../components/ui'
 import { useOfficialResults } from '../app/officialResults'
 import { summarizeTeams, type TeamSummary } from '../lib/grouping'
 import { MIN_MATCHES_PER_TEAM, latestOpr, tournamentOpr, type OprResult } from '../lib/opr'
+import { formatSeconds } from '../lib/cycles'
 import { ESTIMATE_NOTE, formatNum, formatPct } from '../lib/scoring'
 import { teamNameIndex } from '../lib/teams'
 
-type Sort = 'opr' | 'points' | 'accuracy' | 'matches' | 'team'
+type Sort = 'opr' | 'points' | 'accuracy' | 'cycle' | 'matches' | 'team'
 
 /** A team in the list: scouted (with a summary), rated by OPR, or both. */
 interface Row {
@@ -20,10 +21,13 @@ interface Row {
 }
 
 const desc = (a: number | null | undefined, b: number | null | undefined) => (b ?? -Infinity) - (a ?? -Infinity)
+/** Lowest first, with missing values last. */
+const asc = (a: number | null | undefined, b: number | null | undefined) => (a ?? Infinity) - (b ?? Infinity) || 0
 const SORTS: Record<Sort, (a: Row, b: Row) => number> = {
   opr: (a, b) => desc(a.opr, b.opr),
   points: (a, b) => desc(a.summary?.avgEstPoints, b.summary?.avgEstPoints),
   accuracy: (a, b) => desc(a.summary?.overallAccuracy, b.summary?.overallAccuracy),
+  cycle: (a, b) => asc(a.summary?.cycle.median, b.summary?.cycle.median),
   matches: (a, b) => desc(a.summary?.matchesPlayed, b.summary?.matchesPlayed),
   team: (a, b) => a.teamNumber - b.teamNumber,
 }
@@ -77,6 +81,7 @@ export function AnalysisPage() {
             { value: 'opr', label: 'OPR' },
             { value: 'points', label: 'Est. pts' },
             { value: 'accuracy', label: 'Accuracy' },
+            { value: 'cycle', label: 'Cycle' },
             { value: 'matches', label: 'Matches' },
             { value: 'team', label: 'Team #' },
           ]}
@@ -95,10 +100,11 @@ export function AnalysisPage() {
         <Empty title={query ? 'No teams found' : 'No teams scouted yet'} />
       ) : (
         <>
-          <div className="mb-1.5 grid grid-cols-[1fr_3.25rem_3.25rem_3.25rem_3.25rem] px-4 text-[11px] text-ink-3">
+          <div className="mb-1.5 grid grid-cols-[1fr_2.75rem_2.5rem_3.25rem_2.75rem_2.75rem] px-4 text-[11px] text-ink-3">
             <span>Team</span>
             <span className="text-right">Matches</span>
             <span className="text-right">Acc.</span>
+            <span className="text-right" title="Median teleop cycle time">Cycle</span>
             <span className="text-right">OPR</span>
             <span className="text-right" title={ESTIMATE_NOTE}>Est.*</span>
           </div>
@@ -107,7 +113,7 @@ export function AnalysisPage() {
               <li key={t.teamNumber}>
                 <Link
                   to={`${base}/analysis/${t.teamNumber}${scope !== ALL ? `?t=${scope}` : ''}`}
-                  className="grid grid-cols-[1fr_3.25rem_3.25rem_3.25rem_3.25rem] items-center rounded-2xl border border-line bg-surface px-4 py-3 transition-colors hover:border-ink-3"
+                  className="grid grid-cols-[1fr_2.75rem_2.5rem_3.25rem_2.75rem_2.75rem] items-center rounded-2xl border border-line bg-surface px-4 py-3 transition-colors hover:border-ink-3"
                 >
                   <span className="min-w-0">
                     <span className="block truncate font-medium">{t.teamName || `Team ${t.teamNumber}`}</span>
@@ -115,6 +121,7 @@ export function AnalysisPage() {
                   </span>
                   <span className="tnum text-right text-ink-2">{t.summary?.matchesPlayed ?? '—'}</span>
                   <span className="tnum text-right text-ink-2">{t.summary ? formatPct(t.summary.overallAccuracy) : '—'}</span>
+                  <span className="tnum text-right text-ink-2">{t.summary ? formatSeconds(t.summary.cycle.median) : '—'}</span>
                   <span className="tnum text-right font-semibold">{t.opr != null ? formatNum(t.opr) : '—'}</span>
                   <span className="tnum text-right text-ink-2">{t.summary ? formatNum(t.summary.avgEstPoints) : '—'}</span>
                 </Link>

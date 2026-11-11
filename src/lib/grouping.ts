@@ -1,3 +1,4 @@
+import { cycleSummary } from './cycles'
 import { factMessage, factValue, matchFacts, needsFixing, resolutionsFor, tipPhases, type Fact } from './consensus'
 import { compareMatches, matchTypeOf } from './matches'
 import { average, pointsFor, robotStats, type RobotStats } from './scoring'
@@ -198,6 +199,8 @@ export interface TeamSummary {
   autoParkRate: number | null
   teleopParkRate: number | null
   avgSwarmPoints: number | null
+  /** Median teleop cycle (s) over every scouted match, and how many cycles it's from. */
+  cycle: { median: number | null; count: number }
 }
 
 function pooledAccuracy(stats: RobotStats[], kind: 'nectar' | 'pollen' | 'all'): number | null {
@@ -285,6 +288,7 @@ export function summarizeTeams(reports: Report[], tournaments: Tournament[], all
       autoParkRate: rate(full.map((s) => s.autoPark)),
       teleopParkRate: rate(full.map((s) => s.teleopPark)),
       avgSwarmPoints: average(full.map((s) => s.swarmPoints)),
+      cycle: cycleSummary(list),
     })
   }
   return out

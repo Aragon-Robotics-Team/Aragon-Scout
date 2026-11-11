@@ -14,6 +14,7 @@ import { deleteReport, saveTournament } from '../lib/db'
 import { buildExport, downloadJson } from '../lib/exportData'
 import { allianceEstimate, groupMatches } from '../lib/grouping'
 import { matchLabel, matchTitle, matchTypeOf, parseMatchParam } from '../lib/matches'
+import { cycleTimes, formatSeconds, median } from '../lib/cycles'
 import { ESTIMATE_NOTE, alliancePostPoints, formatPct, pointsFor, robotStats, winnerOf } from '../lib/scoring'
 import type { Report, Resolution, Tournament } from '../lib/types'
 
@@ -185,6 +186,7 @@ export function ReportView({ report, tournament }: { report: Report; tournament:
   const s = robotStats(report, points)
   const post = report.post
   const { auto: a, teleop: t, total: tot } = s
+  const cycles = cycleTimes(report)
 
   const exportOne = () =>
     downloadJson(
@@ -274,6 +276,13 @@ export function ReportView({ report, tournament }: { report: Report; tournament:
             </span>
           ))}
           <span className="px-1 py-1 text-ink-3">Leave + park {s.swarmPoints} pts</span>
+        </div>
+        <div className="tnum mt-2 text-sm text-ink-2">
+          Cycle time <span className="font-medium text-ink">{formatSeconds(median(cycles))}</span>
+          <span className="text-ink-3">
+            {' '}
+            · {report.paused ? 'not timed (clock was stopped)' : `median of ${cycles.length} teleop cycle${cycles.length === 1 ? '' : 's'}`}
+          </span>
         </div>
       </Card>
 

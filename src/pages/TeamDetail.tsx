@@ -6,6 +6,7 @@ import { Card, Empty, IncompleteBadge, Page, Segmented, Stat } from '../componen
 import { summarizeTeams } from '../lib/grouping'
 import { latestOpr, savedOfficial, tournamentOpr } from '../lib/opr'
 import { matchLabel, matchPath, matchTypeOf } from '../lib/matches'
+import { formatSeconds } from '../lib/cycles'
 import { ESTIMATE_NOTE, average, formatNum, formatPct, thresholdsFor } from '../lib/scoring'
 
 export function TeamDetailPage() {
@@ -82,6 +83,7 @@ export function TeamDetailPage() {
         <Stat label="Parked (auto)" value={formatPct(summary.autoParkRate)} sub="of matches" />
         <Stat label="Parked (teleop)" value={formatPct(summary.teleopParkRate)} sub="of matches" />
         <Stat label="Leave + park" value={formatNum(summary.avgSwarmPoints)} sub={`avg pts · Swarm RP at ${thresholds.swarmPoints}`} />
+        <Stat label="Cycle time" value={formatSeconds(summary.cycle.median)} sub={`median teleop · ${summary.cycle.count} cycle${summary.cycle.count === 1 ? '' : 's'}`} />
       </div>
       <p className="mt-2 text-[11px] text-ink-3">* {ESTIMATE_NOTE}</p>
 
