@@ -60,7 +60,7 @@ function Editor({
           </select>
         </section>
         <section>
-          <h2 className="mb-3 text-sm font-medium text-ink-2">Before the match</h2>
+          <h2 className="mb-3 text-sm font-medium text-ink-2">Pre-recording</h2>
           <PreMatchForm
             value={report.pre}
             knownNames={knownNames}

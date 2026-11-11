@@ -71,7 +71,7 @@ export function scheduleTeams(schedule: ScheduledMatch[]): number[] {
   return [...new Set(schedule.flatMap((m) => [...m.red, ...m.blue]))].sort((a, b) => a - b)
 }
 
-/** What choosing a robot in a scheduled match fills into the pre-match form. */
+/** What choosing a robot in a scheduled match fills into the pre-recording form. */
 export function slotFill(m: ScheduledMatch, alliance: Alliance, index: 0 | 1) {
   const own = alliance === 'red' ? m.red : m.blue
   const other = alliance === 'red' ? m.blue : m.red

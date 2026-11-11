@@ -247,7 +247,7 @@ export function StartPositionButton({
   )
 }
 
-/** The starting-position field for the pre-match form. */
+/** The starting-position field for the pre-recording form. */
 export function StartPositionField({
   value,
   legacy,

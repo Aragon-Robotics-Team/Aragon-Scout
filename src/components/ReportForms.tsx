@@ -240,7 +240,7 @@ export function TogglesForm({ value, onChange }: { value: Toggles; onChange(v: T
   )
 }
 
-/** The four robots of a scheduled match; one tap fills the pre-match form. */
+/** The four robots of a scheduled match; one tap fills the pre-recording form. */
 function RobotPicker({
   match,
   selected,

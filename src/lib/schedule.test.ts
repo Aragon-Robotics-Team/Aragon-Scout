@@ -91,7 +91,7 @@ describe('schedule helpers', () => {
   const t = newTournament('T')
   t.schedule = parseScheduleText(MATCHMAKER_TEXT).matches
 
-  it('fills the pre-match form from a robot slot', () => {
+  it('fills the pre-recording form from a robot slot', () => {
     const m = findScheduledMatch(t, 1)!
     expect(slotFill(m, 'blue', 1)).toEqual({ teamNumber: 3470, alliance: 'blue', partnerTeam: 8625, opponentTeams: [14323, 13217] })
     expect(findScheduledMatch(t, 99)).toBeUndefined()

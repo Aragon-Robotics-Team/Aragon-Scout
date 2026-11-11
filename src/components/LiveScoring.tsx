@@ -50,7 +50,7 @@ export function LiveScoring({
   tournamentName?: string
   onChange(r: Report): void
   onClock(c: Clock): void
-  /** Back to the pre-match form; only offered before Start. */
+  /** Back to the pre-recording form; only offered before Start. */
   onBack(): void
   /** The match ended, either on time or early; `elapsed` is where the clock stopped. */
   onDone(elapsed: number): void

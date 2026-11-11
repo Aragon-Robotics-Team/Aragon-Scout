@@ -174,6 +174,7 @@ export function RecordPage() {
           </>
         )}
       </div>
+      <h2 className="mb-3 text-sm font-medium text-ink-2">Pre-recording</h2>
       <PreMatchForm
         value={pre}
         knownNames={knownNames}
